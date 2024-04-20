@@ -86,7 +86,7 @@ int main()
       }
 
       // Increase?decrease  number of cubes
-      if (pad_pressed(pad, PAD_R1) && num_cubes < 800)
+      if (pad_pressed(pad, PAD_R1) && num_cubes < 780)
       {
         num_cubes += 2;
       }
@@ -106,10 +106,10 @@ int main()
       }
     }
 
-    draw_method = method == 0 ? &sort_tris_cube : &sort_quad_cube;
+    draw_method = method == 0 ? &SortTrisCube : &SortQuadCube;
 
     // Sort cube primitives
-    sort_cubes(&context);
+    SortCubes(&context);
 
     // Display graphics
     display(&context);

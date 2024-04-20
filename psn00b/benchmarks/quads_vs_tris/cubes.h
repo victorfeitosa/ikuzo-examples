@@ -83,7 +83,7 @@ MATRIX poly_colors[] = {
 };
 
 // Triangle definitions
-void sort_tris_cube(RenderContext *ctx, VECTOR pos, SVECTOR rot)
+void SortTrisCube(RenderContext *ctx, VECTOR pos, SVECTOR rot)
 {
   int i, p;
 
@@ -158,7 +158,7 @@ void sort_tris_cube(RenderContext *ctx, VECTOR pos, SVECTOR rot)
     pol3++;
 
     // Update number of faces drawn
-    num_faces ++;
+    num_faces++;
 
     // Draws second triangle
     // and skip average Z calculation and color setting to save GTE cycles
@@ -186,115 +186,115 @@ void sort_tris_cube(RenderContext *ctx, VECTOR pos, SVECTOR rot)
     // Advance primitive pointer for next primitive
     pol3++;
     // Update number of faces drawn
-    num_faces ++;
+    num_faces++;
   }
 
-  // Update nextpri variable 
+  // Update nextpri variable
   ctx->nextpri = (char *)pol3;
 }
 
-void sort_quad_cube(RenderContext *ctx, VECTOR pos, SVECTOR rot)
+void SortQuadCube(RenderContext *ctx, VECTOR pos, SVECTOR rot)
 {
   int i, p;
 
-  POLY_F4 *pol4 = (POLY_F4 *)ctx->nextpri; // Flat shaded textured quad primitive pointer 
+  POLY_F4 *pol4 = (POLY_F4 *)ctx->nextpri; // Flat shaded textured quad primitive pointer
   DrawEnv *active_buff = active_buffer(ctx);
 
-  // Set rotation and translation to the matrix 
+  // Set rotation and translation to the matrix
   RotMatrix(&rot, WORLD_SPACE);
   TransMatrix(WORLD_SPACE, &pos);
 
-  // Multiply light matrix by rotation matrix so light source 
-  // won't appear relative to the model's rotation 
+  // Multiply light matrix by rotation matrix so light source
+  // won't appear relative to the model's rotation
   MulMatrix0(&LIGHT_MTX, WORLD_SPACE, LIGHT_SPACE);
 
-  // Set rotation and translation matrix 
+  // Set rotation and translation matrix
   gte_SetRotMatrix(WORLD_SPACE);
   gte_SetTransMatrix(WORLD_SPACE);
 
-  // Set light matrix 
+  // Set light matrix
   gte_SetLightMatrix(LIGHT_SPACE);
 
   for (i = 0; i < CUBE_FACES; i++)
   {
     gte_SetColorMatrix(&poly_colors[i]);
-    // Load the first 3 vertices of a quad to the GTE 
+    // Load the first 3 vertices of a quad to the GTE
     gte_ldv3(
         &cube_verts[cube_indices[i].v0],
         &cube_verts[cube_indices[i].v1],
         &cube_verts[cube_indices[i].v2]);
 
-    // Rotation, Translation and Perspective Triple 
+    // Rotation, Translation and Perspective Triple
     gte_rtpt();
 
-    // Compute normal clip for backface culling 
+    // Compute normal direction for backface culling
     gte_nclip();
 
-    // Get result
+    // Store result of cross product (nclip) in p
     gte_stopz(&p);
 
-    // Skip this face if backfaced 
+    // Skip this face if backfaced
     if (p < 0)
       continue;
 
-    // Calculate average Z for depth sorting 
-    gte_avsz4();
-    gte_stotz(&p);
-
-    // Skip if clipping off 
-    // (the shift right operator is to scale the depth precision) 
-    if ((p >> 2) > OT_LEN)
-      continue;
-
-    // Initialize a quad primitive 
+    // Initialize a quad primitive
     setPolyF4(pol4);
 
-    // Set the projected vertices to the primitive 
+    // Set the projected vertices to the primitive
     gte_stsxy0(&pol4->x0);
     gte_stsxy1(&pol4->x1);
     gte_stsxy2(&pol4->x2);
 
-    // Compute the last vertex and set the result 
+    // Compute the last vertex and set the result
     gte_ldv0(&cube_verts[cube_indices[i].v3]);
     gte_rtps();
     gte_stsxy(&pol4->x3);
 
-    // Load primitive color even though gte_ncs() doesn't use it. 
-    // This is so the GTE will output a color result with the 
-    // correct primitive code. 
+    // Calculate average Z for depth sorting and store result in p
+    gte_avsz4();
+    gte_stotz(&p);
+
+    // Skip if clipping off
+    // (the shift right operator is to scale the depth precision)
+    if (p > OT_LEN)
+      continue;
+
+    // Load primitive color even though gte_ncs() doesn't use it.
+    // This is so the GTE will output a color result with the
+    // correct primitive code.
     gte_ldrgb(&pol4->r0);
 
-    // Load the face normal 
+    // Load the face normal
     gte_ldv0(&cube_norms[i]);
 
-    // Normal Color Single 
+    // Normal Color Single
     gte_ncs();
 
-    // Store result to the primitive 
+    // Store result to the primitive
     gte_strgb(&pol4->r0);
 
-    // Sort primitive to the ordering table 
-    addPrim(active_buff->ot + (p >> 2), pol4);
+    // Sort primitive to the ordering table
+    addPrim(active_buff->ot + p, pol4);
 
-    // Advance to make another primitive 
+    // Advance to make another primitive
     pol4++;
     num_faces++;
   }
 
-  // Update nextpri variable 
+  // Update nextpri variable
   ctx->nextpri = (char *)pol4;
 }
 
-// Initial draw method TRIS
-void (*draw_method)(RenderContext *ctx, VECTOR pos, SVECTOR rot) = &sort_tris_cube;
+// Initial draw method is TRIS
+void (*draw_method)(RenderContext *ctx, VECTOR pos, SVECTOR rot) = &SortTrisCube;
 
-void sort_cubes(RenderContext *ctx)
+void SortCubes(RenderContext *ctx)
 {
   num_faces = 0;
   uint32_t i;
   for (i = 0; i < num_cubes; i++)
   {
-    VECTOR cube_pos = {(pos.vx + (i%30) * 120), (pos.vy + (i/30) * 120), pos.vz};
+    VECTOR cube_pos = {(pos.vx + (i % 30) * 120), (pos.vy + (i / 30) * 120), pos.vz};
     (*draw_method)(ctx, cube_pos, rot);
   }
 }
