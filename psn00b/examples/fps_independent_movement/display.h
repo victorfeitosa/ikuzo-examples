@@ -9,8 +9,8 @@
 #include <inline_c.h>
 
 // OT and Packet Buffer sizes
-#define OT_LEN 16384        // Max OT size [2^14]
-#define PACKET_LEN 120000   // Reserve 120kb of packet buffer, required to render 800 cubes with triangles without crashing
+#define OT_LEN 2            
+#define PACKET_LEN 256      
 
 // Screen resolution
 #define SCREEN_XRES 320
@@ -19,6 +19,8 @@
 // Screen center position
 #define CENTERX SCREEN_XRES >> 1
 #define CENTERY SCREEN_YRES >> 1
+
+uint8_t vsync_disabled = 0;      // 0 = Enabled; 1 = Disabled
 
 // Draw env structure
 typedef struct
@@ -36,14 +38,6 @@ typedef struct
   uint8_t active_buffer;
   char *nextpri;
 } RenderContext;
-
-// Light color matrix
-// LIGHT 1, LIGHT 2, LIGHT 3
-MATRIX color_mtx = {
-    ONE, 0, 0,         // R
-    ONE * 1 / 4, 0, 0, // G
-    ONE * 1 / 4, 0, 0  // B
-};
 
 // Gets the pointer to the currently active buffer
 inline DrawEnv *active_buffer(RenderContext *ctx)
@@ -67,6 +61,15 @@ static void vsync_callback()
   
   fps = frames;
   frames = 0;
+}
+
+DrawEnv* swap_buffers(RenderContext *ctx)
+{
+  ctx->active_buffer ^= 1;
+  DrawEnv *active_buff = active_buffer(ctx);
+  ctx->nextpri = active_buff->p;
+
+  return active_buff;
 }
 
 // Initializes render context, 3d, pads and VSync callback
@@ -99,18 +102,6 @@ void init(RenderContext *ctx)
   // Set primitive pointer address
   ctx->nextpri = ctx->draw_buffer[0].p;
 
-  // Initialize the GTE
-  InitGeom();
-
-  // Set GTE offset
-  gte_SetGeomOffset(CENTERX, CENTERY);
-
-  // Set screen depth (basically FOV control, W/2 works best)
-  gte_SetGeomScreen(CENTERX);
-
-  // Set light ambient color
-  gte_SetBackColor(10, 15, 30);
-
   // Initialize Port 1 Controller 
   InitPAD(&pad_buffer[0], 34, NULL, 0);
 
@@ -122,7 +113,7 @@ void init(RenderContext *ctx)
 
   // Load debug font
   FntLoad(960, 0);
-  FntOpen(0, 4, 320, 200, 0, 200);
+  FntOpen(8, 8, 320, 200, 0, 200);
 
   // Sets up VSync callback to count FPS
   EnterCriticalSection();
@@ -135,17 +126,15 @@ void init(RenderContext *ctx)
 
 void display(RenderContext *ctx)
 {
+
   // Put font in display buffer
   FntFlush(-1);
 
   // Wait for GPU to finish drawing
   DrawSync(0);
-  VSync(1);
+  VSync(vsync_disabled);
 
-  // Swap buffers
-  ctx->active_buffer ^= 1;
-  DrawEnv *active_buff = active_buffer(ctx);
-  ctx->nextpri = active_buff->p;
+  DrawEnv *active_buff = swap_buffers(ctx);
 
   // Clear the OT of the next frame
   ClearOTagR(active_buff->ot, OT_LEN);
