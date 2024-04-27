@@ -8,4 +8,5 @@ project(
 	HOMEPAGE_URL "https://github.com/victorfeitosa/ikuzo-examples"
 )
 
+include_directories("../../include")
 psn00bsdk_add_executable(tris_vs_quads GPREL main.c)
