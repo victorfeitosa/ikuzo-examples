@@ -1,9 +1,8 @@
 #include "display.h"
+#include "controller.h"
 #include "tile.h"
 #include "timer.h"
-#include <psxpad.h>
 
-#define pad_pressed(pad, button) !(pad->btn & button)
 #define MAX_DELAY 100000000
 #define fix2int(f) ((f + 512) >> 12)
 
@@ -27,7 +26,6 @@ int main()
 {
   RenderContext context;
   context.active_buffer = 0;
-  PADTYPE *pad;
 
   uint16_t counter_mode = 0;
   uint32_t delta = 0;
@@ -53,8 +51,9 @@ int main()
       {0, 60},
       {0, 160}};
 
-  // Init graphics
-  init(&context);
+  // Init graphics and controllers
+  InitDisplay(&context, 0);
+  InitControllers();
 
   // Main loop
   while (1)
@@ -65,27 +64,25 @@ int main()
     FntPrint(-1, "FPS: %d\t\tVSync %s\n", fps, vsync_disabled ? "DISABLED" : "ENABLED");
     FntPrint(-1, "DELAY: %d\t\tDELTA: %d\n", delay, delta);
 
-    pad = (PADTYPE *)&pad_buffer[0];
-
     // Check inputs
-    if (pad->stat == 0 && pad->type == PAD_ID_DIGITAL)
+    if (pad_enabled(PAD1, PAD_ID_DIGITAL))
     {
       // Turn VSync ON/OFF
-      if (pad_pressed(pad, PAD_CROSS))
+      if (pad_pressed(PAD1, PAD_CROSS))
       {
         vsync_disabled = 0; // VSYNC ENABLED
       }
-      else if (pad_pressed(pad, PAD_TRIANGLE))
+      else if (pad_pressed(PAD1, PAD_TRIANGLE))
       {
         vsync_disabled = 1; // VSYNC DISABLED
       }
 
       // Increase/decrease artificial frame delay
-      if (pad_pressed(pad, PAD_RIGHT) && delay < MAX_DELAY)
+      if (pad_pressed(PAD1, PAD_RIGHT) && delay < MAX_DELAY)
       {
         delay += 1;
       }
-      else if (pad_pressed(pad, PAD_LEFT) && delay > 0)
+      else if (pad_pressed(PAD1, PAD_LEFT) && delay > 0)
       {
         delay -= 1;
       }
@@ -118,7 +115,7 @@ int main()
     SortTile(&context, &tiles[1], tilePos[1].x, tilePos[1].y);
 
     // Display graphics
-    display(&context);
+    DrawDisplay(&context);
 
     // Increase frame count
     frames++;
