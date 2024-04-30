@@ -5,7 +5,7 @@
 
 #define pad_pressed(pad, button) !(pad->btn & button)
 #define MAX_DELAY 100000000
-#define fix2int(f) ((f + 512) >> 12)
+#define fix2int(f) ((f) >> 12)
 
 void resetDelta(uint32_t *delta, uint8_t timerId)
 {
@@ -31,7 +31,7 @@ int main()
 
   uint16_t counter_mode = 0;
   uint32_t delta = 0;
-  uint32_t delay = 0;
+  uint32_t delay = 1;
 
   uint8_t movement = 0;
   int32_t regular_spd = 3;
@@ -95,7 +95,6 @@ int main()
     tilePos[0].x += regular_spd;
 
     // fps independent tile
-    indepX += independent_spd * delta;
     tilePos[1].x = fix2int(indepX);
 
     if (tilePos[0].x <= 0 || tilePos[0].x >= 280)
@@ -103,6 +102,7 @@ int main()
     if (tilePos[1].x <= 0 || tilePos[1].x >= 280)
       independent_spd *= -1;
 
+    indepX += independent_spd * delta;
     // Reset delta
     resetDelta(&delta, 1);
 
