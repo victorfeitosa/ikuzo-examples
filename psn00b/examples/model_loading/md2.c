@@ -1,8 +1,8 @@
 #include "md2.h"
 
-size_t LoadMD2Mem(PSX_MD2 *md2Ptr, char **data)
+size_t LoadMD2Mem(PSX_MD2 *md2Ptr, const unsigned char data[])
 {
-    MD2_Header *head = &data[0];
+    MD2_Header *head = &(data[0]);  // Points header to first byte of MD2 data
     // Allocates enough enough to store all frames and all texture coordinates
     size_t memSize = (head->framesize * head->num_frames * head->num_vertices) + (head->num_st * sizeof(MD2_TexCoord));
     uint8_t md2[memSize];

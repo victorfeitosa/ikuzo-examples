@@ -109,7 +109,7 @@ typedef struct _PSX_MD2_Frame
     PSX_MD2_Vec3 scale;     // How much to scale a frame by (to decompress the vertex coordinates)
     PSX_MD2_Vec3 translate; // How much to translate the frame by
     char name[16];          // Frame name
-    // PS: all frames must contain all vertices
+    MD2_Vertex *verts;      // List of frame's vertex positions/normals
 } PSX_MD2_Frame;
 
 typedef struct _PSX_MD2
@@ -129,7 +129,7 @@ typedef struct _PSX_MD2
  *
  * @return size_t Size in bytes of the allocated chunk for the model
  */
-size_t LoadMD2Mem(PSX_MD2 *md2Ptr, char **data);
+size_t LoadMD2Mem(PSX_MD2 *md2Ptr, const unsigned char data[]);
 
 /**
  * @brief Sorts a loaded MD2 model
