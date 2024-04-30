@@ -11,7 +11,7 @@ int main()
     RenderContext context;
     context.active_buffer = 0;
 
-    PSX_MD2 *md2;
+    MD2 *md2;
     size_t md2Size = LoadMD2Mem(&md2, mummy);
 
     // Init graphics and controllers

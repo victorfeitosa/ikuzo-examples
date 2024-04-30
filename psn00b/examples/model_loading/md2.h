@@ -36,6 +36,7 @@ typedef struct _MD2_Header
 } MD2_Header;
 
 typedef float MD2_Vec3[3];
+typedef int MD2_Vec3i[3];
 typedef char MD2_SkinName[64];
 
 typedef struct _MD2_Tri
@@ -65,61 +66,22 @@ typedef struct _MD2_Frame
     MD2_Vertex *verts;  /* list of frame's vertices */
 } MD2_Frame;
 
-//----------------------------
-// Memory Optimized MD2 defs
-//----------------------------
-typedef struct _PSX_MD2_Header
+typedef struct _MD2_FrameI
 {
-    uint16_t skinwidth; // Textures can only be a max of 256x256 pixels
-    uint16_t skinheight;
-    uint16_t framesize;
-    uint16_t num_vertices;
-    uint32_t num_st;
-    uint32_t num_tris;
-    uint16_t num_frames;
-    size_t offset_skins;
-    size_t offset_st;
-    size_t offset_tris;
-    size_t offset_frames;
-    size_t eof;
-} PSX_MD2_Header;
+    MD2_Vec3i scale;     
+    MD2_Vec3i translate; 
+    char name[16];       
+    MD2_Vertex *verts;   
+} MD2_FrameI;
 
-typedef VECTOR PSX_MD2_Vec3;
-
-typedef struct _PSX_MD2_TexCoord
+typedef struct _MD2
 {
-    uint8_t s; // PSX Texture coords can algo only go up to 256
-    uint8_t t;
-} PSX_MD2_TexCoord;
-
-typedef struct _PSX_MD2_Tri
-{
-    uint16_t vertex[3]; // Indexes of a face's vertices
-    uint16_t st[3];     // Indexes of a face vertices' texture coords
-} PSX_MD2_Tri;
-
-typedef struct _PSX_MD2_Vertex
-{
-    uint8_t v[3];           // Compressed vertex position [0-255, 0-255, 0-255]
-    uint8_t normalIndex;    // Vertex normal index (0-255)
-} PSX_MD2_Vertex;
-
-typedef struct _PSX_MD2_Frame
-{
-    PSX_MD2_Vec3 scale;     // How much to scale a frame by (to decompress the vertex coordinates)
-    PSX_MD2_Vec3 translate; // How much to translate the frame by
-    char name[16];          // Frame name
-    MD2_Vertex *verts;      // List of frame's vertex positions/normals
-} PSX_MD2_Frame;
-
-typedef struct _PSX_MD2
-{
-    PSX_MD2_Header head;
-    PSX_MD2_TexCoord *texcoords;
-    PSX_MD2_Vertex *verts;
-    PSX_MD2_Tri *tris;
-    PSX_MD2_Frame *frames;
-} PSX_MD2;
+    MD2_Header head;
+    MD2_TexCoord *texcoords;
+    MD2_Vertex *verts;
+    MD2_Tri *tris;
+    MD2_FrameI *frames;
+} MD2;
 
 /**
  * @brief Loads an MD2 model from a space in memory
@@ -129,12 +91,12 @@ typedef struct _PSX_MD2
  *
  * @return size_t Size in bytes of the allocated chunk for the model
  */
-size_t LoadMD2Mem(PSX_MD2 **md2Ptr, const unsigned char data[]);
+size_t LoadMD2Mem(MD2 **md2Ptr, const unsigned char data[]);
 
 /**
  * @brief Sorts a loaded MD2 model
  *
  */
-void SortMD2(PSX_MD2 *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, VECTOR scale);
+void SortMD2(MD2 *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, VECTOR scale);
 
 #endif // _MD2_H_
