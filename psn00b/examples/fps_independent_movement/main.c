@@ -52,7 +52,7 @@ int main()
       {0, 160}};
 
   // Init graphics and controllers
-  InitDisplay(&context, 0);
+  InitDisplay(&context, 1);
   InitControllers();
 
   // Main loop

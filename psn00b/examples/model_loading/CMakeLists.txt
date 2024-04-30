@@ -9,4 +9,5 @@ project(
 )
 
 include_directories("../../include")
-psn00bsdk_add_executable(model_loading GPREL md2.c main.c)
+file(GLOB _sources *.c)
+psn00bsdk_add_executable(model_loading GPREL ${_sources})

@@ -70,8 +70,8 @@ typedef struct _MD2_Frame
 //----------------------------
 typedef struct _PSX_MD2_Header
 {
-    uint8_t skinwidth; // Textures can only be a max of 256x256 pixels
-    uint8_t skinheight;
+    uint16_t skinwidth; // Textures can only be a max of 256x256 pixels
+    uint16_t skinheight;
     uint16_t framesize;
     uint16_t num_vertices;
     uint32_t num_st;
@@ -129,7 +129,7 @@ typedef struct _PSX_MD2
  *
  * @return size_t Size in bytes of the allocated chunk for the model
  */
-size_t LoadMD2Mem(PSX_MD2 *md2Ptr, const unsigned char data[]);
+size_t LoadMD2Mem(PSX_MD2 **md2Ptr, const unsigned char data[]);
 
 /**
  * @brief Sorts a loaded MD2 model
