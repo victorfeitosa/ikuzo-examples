@@ -11,3 +11,4 @@ project(
 include_directories("../../include")
 file(GLOB _sources *.c)
 psn00bsdk_add_executable(model_loading GPREL ${_sources})
+psn00bsdk_target_incbin(model_loading PRIVATE tim_texture mummy.tim)

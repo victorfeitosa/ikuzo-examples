@@ -10,11 +10,11 @@
 
 // OT and Packet Buffer sizes
 #define OT_LEN 16384
-#define PACKET_LEN 120000
+#define PACKET_LEN 200000
 
 // Screen resolution
 #define SCREEN_XRES 320
-#define SCREEN_YRES 256
+#define SCREEN_YRES 240
 
 // Screen center position
 #define CENTERX SCREEN_XRES >> 1
@@ -46,20 +46,25 @@ inline DrawEnv *active_buffer(RenderContext *ctx)
 static volatile uint32_t fps = 0;
 static volatile uint32_t frames = 0;
 static uint8_t vsync_disabled = 0;
+static uint8_t advance_animation = 0;
 
 // FPS update callback
 static void vsync_callback()
 {
-    int refresh_rate = (GetVideoMode() == MODE_PAL) ? 50 : 60;
+    uint8_t refresh_rate = (GetVideoMode() == MODE_PAL) ? 50 : 60;
+    uint32_t cycle = VSync(-1);
 
-    if (VSync(-1) % refresh_rate)
+    if (cycle % 5 == 0)
+        advance_animation = 1;
+
+    if (cycle % refresh_rate)
         return;
 
     fps = frames;
     frames = 0;
 }
 
-DrawEnv *swap_buffers(RenderContext *ctx)
+static DrawEnv *swap_buffers(RenderContext *ctx)
 {
     ctx->active_buffer ^= 1;
     DrawEnv *active_buff = active_buffer(ctx);
@@ -69,7 +74,7 @@ DrawEnv *swap_buffers(RenderContext *ctx)
 }
 
 // Initializes render context, 3d, pads and VSync callback
-void InitDisplay(RenderContext *ctx, uint8_t initGTE)
+static void InitDisplay(RenderContext *ctx, uint8_t initGTE)
 {
     ResetGraph(0);
 
@@ -115,7 +120,7 @@ void InitDisplay(RenderContext *ctx, uint8_t initGTE)
 
     // Load debug font
     FntLoad(960, 0);
-    FntOpen(8, 8, 320, 200, 0, 200);
+    FntOpen(8, 8, SCREEN_XRES, SCREEN_YRES, 0, 2048);
 
     // Sets up VSync callback to count FPS
     EnterCriticalSection();
@@ -126,7 +131,7 @@ void InitDisplay(RenderContext *ctx, uint8_t initGTE)
     VSync(0);
 }
 
-void DrawDisplay(RenderContext *ctx)
+static void DrawDisplay(RenderContext *ctx)
 {
     // Put font in display buffer
     FntFlush(-1);

@@ -1,6 +1,7 @@
 #ifndef _MD2_H_
 #define _MD2_H_
 
+#include "display.h"
 #include <psxgpu.h>
 #include <psxgte.h>
 #include <stdint.h>
@@ -39,6 +40,11 @@ typedef float MD2_Vec3[3];
 typedef int MD2_Vec3i[3];
 typedef char MD2_SkinName[64];
 
+typedef struct _MD2_Skin
+{
+    char name[64];
+} MD2_Skin;
+
 typedef struct _MD2_Tri
 {
     unsigned short vertex[3]; /* vertex indices of the triangle */
@@ -68,35 +74,54 @@ typedef struct _MD2_Frame
 
 typedef struct _MD2_FrameI
 {
-    MD2_Vec3i scale;     
-    MD2_Vec3i translate; 
-    char name[16];       
-    MD2_Vertex *verts;   
+    MD2_Vec3i scale;
+    MD2_Vec3i translate;
+    char name[16];
+    MD2_Vertex *verts;
 } MD2_FrameI;
 
-typedef struct _MD2
+typedef struct _MD2_M
 {
-    MD2_Header head;
+    MD2_Header *head;
     MD2_TexCoord *texcoords;
-    MD2_Vertex *verts;
     MD2_Tri *tris;
     MD2_FrameI *frames;
-} MD2;
+    uint16_t current_frame;
+} MD2_M;
 
 /**
- * @brief Loads an MD2 model from a space in memory
+ * @brief Loads an MD2 model from a file
  *
  * @param MD2* md2Ptr Pointer that will reference the loaded model
  * @param char* md2File MD2 model file
  *
- * @return size_t Size in bytes of the allocated chunk for the model
+ * @return size_t Size in bytes of the allocated memory for the model
  */
-size_t LoadMD2Mem(MD2 **md2Ptr, const unsigned char data[]);
+size_t LoadMD2(MD2_M *md2, const unsigned char *file);
+
+/**
+ * @brief Loads an MD2 model from stack memory
+ *
+ * @param MD2* md2Ptr Pointer that will reference the loaded model
+ * @param char* md2File MD2 model data
+ *
+ * @return void
+ */
+void LoadMD2FromMem(MD2_M *md2, const unsigned char *data);
 
 /**
  * @brief Sorts a loaded MD2 model
  *
  */
-void SortMD2(MD2 *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, VECTOR scale);
+void SortMD2(RenderContext *ctx, MD2_M *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, uint32_t scale);
+
+/**
+ * @brief Unpacks frame position based on frame translation and scale
+ *
+ * @param md2 MD2 model pointer
+ * @param frame current frame coordinates to unpack
+ * @return SVECTOR vector of unpacked positions to be used by the GTE
+ */
+SVECTOR md2_unpack_pos(MD2_M *md2, uint16_t frame);
 
 #endif // _MD2_H_

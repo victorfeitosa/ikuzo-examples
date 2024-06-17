@@ -49,11 +49,6 @@ MATRIX poly_colors[] = {
     {0, 0, 0, ONE, 0, 0, ONE, 0, 0}, {ONE, 0, 0, 0, 0, 0, ONE, 0, 0}, {ONE, 0, 0, ONE, 0, 0, 0, 0, 0},
 };
 
-void InitCubeDefs()
-{
-  scratch_verts = malloc(sizeof(cube_verts));
-}
-
 // Triangle definitions
 void SortTrisCube(RenderContext *ctx, VECTOR pos, SVECTOR rot)
 {
@@ -251,7 +246,7 @@ void SortQuadCube(RenderContext *ctx, VECTOR pos, SVECTOR rot)
 // Initial draw method is TRIS
 void (*draw_method)(RenderContext *ctx, VECTOR pos, SVECTOR rot) = &SortTrisCube;
 
-inline void SortCubes(RenderContext *ctx)
+static void SortCubes(RenderContext *ctx)
 {
     num_faces = 0;
     uint32_t i;
