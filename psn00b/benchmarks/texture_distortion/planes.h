@@ -14,23 +14,23 @@ typedef struct
 
 // Simple plane mesh
 SVECTOR simple_plane_verts[] = {
-    {0, 0, 0},
-    {200, 0, 0},
-    {0, 200, 0},
-    {200, 200, 0}
+    {-100, -100, 0},
+    {100,  -100, 0},
+    {-100,  100, 0},
+    {100,   100, 0}
 };
 // Vertically subdivided plane mesh
 SVECTOR vertical_plane_verts[] = {
-    {0, 0, 0},     {50, 0, 0},     {100, 0, 0},     {1500, 0, 0},     {200, 0, 0},
-    {0, 200, 0},   {50, 200, 0},   {100, 200, 0},   {1500, 200, 0},   {200, 200, 0}    
+    {-100, -100, 0}, {-50, -100, 0}, {0, -100, 0}, {50, -100, 0}, {100, -100, 0},
+    {-100, 100, 0},  {-50, 100, 0},  {0, 100, 0},  {50, 100, 0},  {100, 100, 0}    
 };
 // Subdivided plane mesh
 SVECTOR sub_plane_verts[] = {
-    {0, 0, 0},   {50, 0, 0},   {100, 0, 0},   {1500, 0, 0},   {200, 0, 0},
-    {0, 50, 0},  {50, 50, 0},  {100, 50, 0},  {150, 50, 0},   {200, 50, 0},
-    {0, 100, 0}, {50, 100, 0}, {100, 100, 0}, {150, 100, 0},  {200, 100, 0},
-    {0, 150, 0}, {50, 150, 0}, {100, 150, 0}, {150, 150, 0},  {200, 150, 0},
-    {0, 200, 0}, {50, 200, 0}, {100, 200, 0}, {150, 200, 0},  {200, 200, 0}
+    {-100, -100, 0}, {-50, -100, 0}, {0, -100, 0}, {50, -100, 0}, {100, -100, 0},
+    {-100, -50, 0},  {-50, -50, 0},  {0, -50, 0},  {50, -50, 0},  {100, -50, 0},
+    {-100, 0, 0},    {-50, 0, 0},    {0, 0, 0},    {50, 0, 0},    {100, 0, 0},
+    {-100, 50, 0},   {-50, 50, 0},   {0, 50, 0},   {50, 50, 0},   {100, 50, 0},
+    {-100, 100, 0},  {-50, 100, 0},  {0, 100, 0},  {50, 100, 0},  {100, 100, 0}
 };
 
 SVECTOR *scratch_verts = (SVECTOR*)0x1F800000;
@@ -46,7 +46,7 @@ INDEX subdivided_plane_indices[] = {
 };
 
 SVECTOR rot = {0, 0};
-VECTOR pos = {-1700, -800, 2000};
+VECTOR pos = {0, 0, 400};
 
 MATRIX *WORLD_SPACE;
 
@@ -85,7 +85,7 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
     gte_stopz(&p);
 
     // Initialize a quad primitive
-    setPolyF4(pol4);
+    setPolyFT4(pol4);
 
     // Set the projected vertices to the primitive
     gte_stsxy0(&pol4->x0);
@@ -133,10 +133,104 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
     ctx->nextpri = (char *)pol4;
 }
 
-
-inline void SortPlanes(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
+void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
 {
+    int i, p;
+
+    POLY_FT4 *pol4 = (POLY_FT4 *)ctx->nextpri;
+    DrawEnv *active_buff = active_buffer(ctx);
+
+    uint16_t texture_tpage = getTPage(texture->mode, 1, texture->prect->x, texture->prect->y);
+    uint16_t texture_clut = getClut(texture->crect->x, texture->crect->y);
+
+    // Set rotation and translation to the matrix
+    RotMatrix(&rot, WORLD_SPACE);
+    TransMatrix(WORLD_SPACE, &pos);
+
+    // Set rotation and translation matrix
+    gte_SetRotMatrix(WORLD_SPACE);
+    gte_SetTransMatrix(WORLD_SPACE);
+
+    // Draws each row of planes
+    for(size_t j=0; j < 5; j++)
+    {
+        // Load the first 3 vertices of a quad to the GTE
+        gte_ldv3(
+            &vertical_plane_verts[vertical_plane_indices[j].v0],
+            &vertical_plane_verts[vertical_plane_indices[j].v1],
+            &vertical_plane_verts[vertical_plane_indices[j].v2]
+        );
+
+        // Rotation, Translation and Perspective Triple
+        gte_rtpt();
+
+        // Compute normal direction for backface culling
+        gte_nclip();
+
+        // Store result of cross product (nclip) in p
+        gte_stopz(&p);
+
+        // Initialize a quad primitive
+        setPolyFT4(pol4);
+
+        // Set the projected vertices to the primitive
+        gte_stsxy0(&pol4->x0);
+        gte_stsxy1(&pol4->x1);
+        gte_stsxy2(&pol4->x2);
+
+        // Compute the last vertex and set the result
+        gte_ldv0(&vertical_plane_verts[vertical_plane_indices[j].v3]);
+        gte_rtps();
+        gte_stsxy(&pol4->x3);
+
+        // Calculate average Z for depth sorting and store result in p
+        gte_avsz4();
+        gte_stotz(&p);
+
+        // Skip if clipping off
+        // (the shift right operator is to scale the depth precision)
+        if (p > OT_LEN || p < 30)
+            return;
+
+        // Load primitive color even though gte_ncs() doesn't use it.
+        // This is so the GTE will output a color result with the
+        // correct primitive code.
+        gte_ldrgb(&pol4->r0);
+
+        setRGB0(pol4, 127, 127, 127);
+
+        // Set the UVs
+        const uint16_t uv_x = (51 * j);
+        setUV4(
+            pol4,
+            uv_x, 0,
+            uv_x + 51, 0,
+            uv_x, 255,
+            uv_x + 51, 255
+        );
+
+        pol4->tpage = texture_tpage;
+        pol4->clut = texture_clut;
+
+        // Sort primitive to the ordering table
+        addPrim(active_buff->ot + p, pol4);
+
+        // Advance to make another primitive
+        pol4++;
+    }
+
+    // Update nextpri variable
+    ctx->nextpri = (char *)pol4;
+}
+
+
+static void SortPlanes(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
+{
+    VECTOR pos_r = {pos.vx + 200, pos.vy, pos.vz};
+    VECTOR pos_l = {pos.vx - 200, pos.vy, pos.vz};
+
     SortSimplePlane(ctx, texture, pos, rot);
+    SortVerticalSubPlane(ctx, texture, pos_r, rot);
 }
 
 #endif

@@ -38,7 +38,6 @@ int main()
     // Init graphics and controllers
     InitDisplay(&context, 1);
     InitControllers();
-    // InitCubeMem();
 
     MATRIX mtx, lmtx; // Rotation matrices for geometry and lighting
     WORLD_SPACE = &mtx;
@@ -54,20 +53,17 @@ int main()
     {
         FntPrint(-1, "FPS: %d\n", fps);
 
-        // Constantly rotate cubes
-        rot.vx += 16;
-        rot.vy += 24;
         // Check inputs
         if (pad_enabled(PAD1, PAD_ID_DIGITAL))
         {
             // Move cubes
             if (pad_pressed(PAD1, PAD_UP))
             {
-                pos.vy += 8;
+                pos.vy -= 8;
             }
             else if (pad_pressed(PAD1, PAD_DOWN))
             {
-                pos.vy -= 8;
+                pos.vy += 8;
             }
 
             if (pad_pressed(PAD1, PAD_LEFT))
@@ -81,39 +77,39 @@ int main()
 
             if (pad_pressed(PAD1, PAD_R2))
             {
-                pos.vz += 50;
+                pos.vz -= 4;
             }
             else if (pad_pressed(PAD1, PAD_L2))
             {
-                pos.vz -= 50;
+                pos.vz += 4;
             }
 
             // Rotate planes
             if (pad_pressed(PAD1, PAD_R1))
             {
-                rot.vx += 8;
+                rot.vy += 4;
             }
             else if (pad_pressed(PAD1, PAD_L1))
             {
-                rot.vx -= 8;
+                rot.vy -= 4;
             }
 
             if (pad_pressed(PAD1, PAD_CROSS))
             {
-                rot.vy += 8;
+                rot.vx += 4;
             }
             else if (pad_pressed(PAD1, PAD_TRIANGLE))
             {
-                rot.vy -= 8;
+                rot.vx -= 4;
             }
 
             if (pad_pressed(PAD1, PAD_CIRCLE))
             {
-                rot.vz += 8;
+                rot.vz += 4;
             }
             else if (pad_pressed(PAD1, PAD_SQUARE))
             {
-                rot.vz -= 8;
+                rot.vz -= 4;
             }
 
             // Force exit
