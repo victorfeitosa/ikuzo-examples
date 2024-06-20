@@ -10,4 +10,6 @@ project(
 
 include_directories("../../include")
 psn00bsdk_add_executable(texture_distortion GPREL main.c)
-psn00bsdk_target_incbin(texture_distortion PRIVATE tim_texture checker.tim)
+psn00bsdk_target_incbin(texture_distortion PRIVATE checker_tex checker.tim)
+psn00bsdk_target_incbin(texture_distortion PRIVATE fence_tex fence.tim)
+psn00bsdk_target_incbin(texture_distortion PRIVATE wall_tex wall.tim)

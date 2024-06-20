@@ -26,27 +26,36 @@
 #include "display.h"
 #include <psxpad.h>
 
-extern const uint32_t tim_texture[];
+extern const uint32_t checker_tex[];
+extern const uint32_t fence_tex[];
+extern const uint32_t wall_tex[];
 
 // Main function
 int main()
 {
     RenderContext context;
     context.active_buffer = 0;
-    TIM_IMAGE texture;
+    TIM_IMAGE tims[3];
+    int curr_tim, select;
+    const uint32_t *textures[] = {checker_tex, fence_tex, wall_tex};
 
     // Init graphics and controllers
     InitDisplay(&context, 1);
     InitControllers();
 
-    MATRIX mtx, lmtx; // Rotation matrices for geometry and lighting
+    MATRIX mtx;
     WORLD_SPACE = &mtx;
 
-    /* Load .TIM file */
-    GetTimInfo(tim_texture, &texture);
-    if (texture.mode & 0x8)
-        LoadImage(texture.crect, texture.caddr); /* Upload CLUT if present */
-    LoadImage(texture.prect, texture.paddr);     /* Upload texture to VRAM */
+    /* Load .TIM files */
+    for (size_t i = 0; i < 3; i++)
+    {
+        GetTimInfo(textures[i], &tims[i]);
+        if (tims[i].mode & 0x8)
+            LoadImage(tims[i].crect, tims[i].caddr); /* Upload CLUT if present */
+        LoadImage(tims[i].prect, tims[i].paddr);     /* Upload texture to VRAM */
+    }
+
+    curr_tim = select = 0;
 
     // Main loop
     while (1)
@@ -112,6 +121,16 @@ int main()
                 rot.vz -= 4;
             }
 
+            if (pad_pressed(PAD1, PAD_SELECT))
+            {
+                select = 1;
+            }
+            else if (select)
+            {
+                curr_tim = (curr_tim + 1) % 3;
+                select = 0;
+            }
+
             // Force exit
             if (pad_pressed(PAD1, PAD_SELECT) && pad_pressed(PAD1, PAD_START))
             {
@@ -119,7 +138,7 @@ int main()
             }
         }
 
-        SortPlanes(&context, &texture, pos, rot);
+        SortPlanes(&context, &tims[curr_tim], pos, rot);
         DrawDisplay(&context);
 
         frames++;
