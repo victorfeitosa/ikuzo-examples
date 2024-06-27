@@ -60,8 +60,6 @@ int main()
     // Main loop
     while (1)
     {
-        FntPrint(-1, "FPS: %d\n", fps);
-
         // Check inputs
         if (pad_enabled(PAD1, PAD_ID_DIGITAL))
         {

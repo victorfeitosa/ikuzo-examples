@@ -55,7 +55,9 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
     int i, p;
 
     POLY_FT4 *pol4 = (POLY_FT4 *)ctx->nextpri;
+    LINE_F3 *line;
     DrawEnv *active_buff = active_buffer(ctx);
+    uint16_t scoords[4][2];
 
     uint16_t texture_tpage = getTPage(texture->mode, 1, texture->prect->x, texture->prect->y);
     uint16_t texture_clut = getClut(texture->crect->x, texture->crect->y);
@@ -86,6 +88,7 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
 
     // Initialize a quad primitive
     setPolyFT4(pol4);
+    setRGB0(pol4, 127, 127, 127);
 
     // Set the projected vertices to the primitive
     gte_stsxy0(&pol4->x0);
@@ -106,13 +109,6 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
     if (p > OT_LEN || p < 25)
         return;
 
-    // Load primitive color even though gte_ncs() doesn't use it.
-    // This is so the GTE will output a color result with the
-    // correct primitive code.
-    gte_ldrgb(&pol4->r0);
-
-    setRGB0(pol4, 127, 127, 127);
-
     // Set the UVs
     setUV4(pol4,
         0, 0,
@@ -127,10 +123,34 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
     addPrim(active_buff->ot + p, pol4);
 
     // Advance to make another primitive
-    pol4++;
-
+    // pol4++;
     // Update nextpri variable
-    ctx->nextpri = (char *)pol4;
+    ctx->nextpri = (char *)(pol4 + sizeof(POLY_FT4));
+
+    // Draw the wireframe
+    line = (LINE_F3 *)ctx->nextpri;
+    setLineF3(line);
+    setSemiTrans(line, 1);
+    setRGB0(line, 40, 10, 10);
+
+    line->x0 = pol4->x0; line->y0 = pol4->y0;
+    line->x1 = pol4->x1; line->y1 = pol4->y1;
+    line->x2 = pol4->x3; line->y2 = pol4->y3;
+
+    addPrim(active_buff->ot + (p >> 2), line);
+    line++;
+
+    setLineF3(line);
+    setSemiTrans(line, 1);
+    setRGB0(line, 40, 10, 10);
+
+    line->x0 = pol4->x0; line->y0 = pol4->y0;
+    line->x1 = pol4->x2; line->y1 = pol4->y2;
+    line->x2 = pol4->x3; line->y2 = pol4->y3;
+
+    addPrim(active_buff->ot + (p >> 2), line);
+    line++;
+    ctx->nextpri = (char *)line;
 }
 
 void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
@@ -138,6 +158,7 @@ void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SV
     int i, p;
 
     POLY_FT4 *pol4 = (POLY_FT4 *)ctx->nextpri;
+    LINE_F3 *line;
     DrawEnv *active_buff = active_buffer(ctx);
 
     uint16_t texture_tpage = getTPage(texture->mode, 1, texture->prect->x, texture->prect->y);
@@ -152,7 +173,7 @@ void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SV
     gte_SetTransMatrix(WORLD_SPACE);
 
     // Draws each row of planes
-    for(size_t j=0; j < 5; j++)
+    for(size_t j=0; j < 4; j++)
     {
         // Load the first 3 vertices of a quad to the GTE
         gte_ldv3(
@@ -189,7 +210,7 @@ void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SV
 
         // Skip if clipping off
         // (the shift right operator is to scale the depth precision)
-        if (p > OT_LEN || p < 30)
+        if (p > OT_LEN || p < 25)
             return;
 
         // Load primitive color even though gte_ncs() doesn't use it.
@@ -216,11 +237,37 @@ void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SV
         addPrim(active_buff->ot + p, pol4);
 
         // Advance to make another primitive
-        pol4++;
+        // pol4++;
+        ctx->nextpri = (char *)(pol4 + sizeof(POLY_FT4));
+
+        // Draw the wireframe
+        line = (LINE_F3 *)ctx->nextpri;
+        setLineF3(line);
+        setSemiTrans(line, 1);
+        setRGB0(line, 40, 10, 10);
+
+        line->x0 = pol4->x0; line->y0 = pol4->y0;
+        line->x1 = pol4->x1; line->y1 = pol4->y1;
+        line->x2 = pol4->x3; line->y2 = pol4->y3;
+
+        addPrim(active_buff->ot + (p >> 2), line);
+        line++;
+
+        setLineF3(line);
+        setSemiTrans(line, 1);
+        setRGB0(line, 40, 10, 10);
+
+        line->x0 = pol4->x0; line->y0 = pol4->y0;
+        line->x1 = pol4->x2; line->y1 = pol4->y2;
+        line->x2 = pol4->x3; line->y2 = pol4->y3;
+
+        addPrim(active_buff->ot + (p >> 2), line);
+        line++;
+        pol4 = (POLY_FT4 *)line;
     }
 
     // Update nextpri variable
-    ctx->nextpri = (char *)pol4;
+    ctx->nextpri = (char *)line;
 }
 
 void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
@@ -228,6 +275,7 @@ void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVE
     int i, p;
 
     POLY_FT4 *pol4 = (POLY_FT4 *)ctx->nextpri;
+    LINE_F3 *line;
     DrawEnv *active_buff = active_buffer(ctx);
 
     uint16_t texture_tpage = getTPage(texture->mode, 1, texture->prect->x, texture->prect->y);
@@ -282,11 +330,6 @@ void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVE
         if (p > OT_LEN || p < 30)
             return;
 
-        // Load primitive color even though gte_ncs() doesn't use it.
-        // This is so the GTE will output a color result with the
-        // correct primitive code.
-        gte_ldrgb(&pol4->r0);
-
         setRGB0(pol4, 127, 127, 127);
 
         // Set the UVs
@@ -307,7 +350,33 @@ void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVE
         addPrim(active_buff->ot + p, pol4);
 
         // Advance to make another primitive
-        pol4++;
+        // pol4++;
+        ctx->nextpri = (char *)(pol4 + sizeof(POLY_FT4));
+
+        // Draw the wireframe
+        line = (LINE_F3 *)ctx->nextpri;
+        setLineF3(line);
+        setSemiTrans(line, 1);
+        setRGB0(line, 40, 10, 10);
+
+        line->x0 = pol4->x0; line->y0 = pol4->y0;
+        line->x1 = pol4->x1; line->y1 = pol4->y1;
+        line->x2 = pol4->x3; line->y2 = pol4->y3;
+
+        addPrim(active_buff->ot + (p >> 2), line);
+        line++;
+
+        setLineF3(line);
+        setSemiTrans(line, 1);
+        setRGB0(line, 40, 10, 10);
+
+        line->x0 = pol4->x0; line->y0 = pol4->y0;
+        line->x1 = pol4->x2; line->y1 = pol4->y2;
+        line->x2 = pol4->x3; line->y2 = pol4->y3;
+
+        addPrim(active_buff->ot + (p >> 2), line);
+        line++;
+        pol4 = (POLY_FT4 *)line;
     }
 
     // Update nextpri variable
@@ -320,9 +389,9 @@ static void SortPlanes(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECT
     VECTOR pos_r = {pos.vx + 200, pos.vy, pos.vz};
     VECTOR pos_l = {pos.vx - 200, pos.vy, pos.vz};
 
-    SortSimplePlane(ctx, texture, pos, rot);
-    SortVerticalSubPlane(ctx, texture, pos_r, rot);
-    SortSubdividedPlane(ctx, texture, pos_l, rot);
+    SortSimplePlane(ctx, texture, pos_l, rot);
+    SortVerticalSubPlane(ctx, texture, pos, rot);
+    SortSubdividedPlane(ctx, texture, pos_r, rot);
 }
 
 #endif
