@@ -19,6 +19,13 @@ SVECTOR simple_plane_verts[] = {
     {-100,  100, 0},
     {100,   100, 0}
 };
+// Cross-like subdivided plane mesh
+SVECTOR cross_plane_verts[] = {
+    {-100, 100, 0}, {100, 100, 0}, {100, -100, 0}, {-100, -100, 0}, {0, 0, 0}
+};
+DVECTOR cross_uvs[] = {
+    {0, 255}, {255, 255}, {255, 0}, {0, 0}, {127, 127}
+};
 // Vertically subdivided plane mesh
 SVECTOR vertical_plane_verts[] = {
     {-100, -100, 0}, {-50, -100, 0}, {0, -100, 0}, {50, -100, 0}, {100, -100, 0},
@@ -36,9 +43,10 @@ SVECTOR sub_plane_verts[] = {
 SVECTOR *scratch_verts = (SVECTOR*)0x1F800000;
 
 // Plane vertex indexes
-INDEX simple_plane_indices = {0, 1, 2, 3};
-INDEX vertical_plane_indices[] = {{0, 1, 5, 6}, {1, 2, 6, 7}, {2, 3, 7, 8}, {3, 4, 8, 9}};
-INDEX subdivided_plane_indices[] = {
+INDEX simple_plane_indexes = {0, 1, 2, 3};
+INDEX cross_plane_indexes[] = {{0, 1, 4}, {1, 2, 4}, {2, 3, 4}, {3, 0, 4}};
+INDEX vertical_plane_indexes[] = {{0, 1, 5, 6}, {1, 2, 6, 7}, {2, 3, 7, 8}, {3, 4, 8, 9}};
+INDEX subdivided_plane_indexes[] = {
     {0, 1, 5, 6},     {1, 2, 6, 7},     {2, 3, 7, 8},     {3, 4, 8, 9},
     {5, 6, 10, 11},   {6, 7, 11, 12},   {7, 8, 12, 13},   {8, 9, 13, 14},
     {10, 11, 15, 16}, {11, 12, 16, 17}, {12, 13, 17, 18}, {13, 14, 18, 19},
@@ -72,9 +80,9 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
 
     // Load the first 3 vertices of a quad to the GTE
     gte_ldv3(
-        &simple_plane_verts[simple_plane_indices.v0],
-        &simple_plane_verts[simple_plane_indices.v1],
-        &simple_plane_verts[simple_plane_indices.v2]
+        &simple_plane_verts[simple_plane_indexes.v0],
+        &simple_plane_verts[simple_plane_indexes.v1],
+        &simple_plane_verts[simple_plane_indexes.v2]
     );
 
     // Rotation, Translation and Perspective Triple
@@ -96,7 +104,7 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
     gte_stsxy2(&pol4->x2);
 
     // Compute the last vertex and set the result
-    gte_ldv0(&simple_plane_verts[simple_plane_indices.v3]);
+    gte_ldv0(&simple_plane_verts[simple_plane_indexes.v3]);
     gte_rtps();
     gte_stsxy(&pol4->x3);
 
@@ -153,6 +161,107 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
     ctx->nextpri = (char *)line;
 }
 
+void SortCrossPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
+{
+    int i, p;
+
+    POLY_FT3 *pol3 = (POLY_FT3 *)ctx->nextpri;
+    LINE_F3 *line;
+    DrawEnv *active_buff = active_buffer(ctx);
+
+    uint16_t texture_tpage = getTPage(texture->mode, 1, texture->prect->x, texture->prect->y);
+    uint16_t texture_clut = getClut(texture->crect->x, texture->crect->y);
+
+    // Set rotation and translation to the matrix
+    RotMatrix(&rot, WORLD_SPACE);
+    TransMatrix(WORLD_SPACE, &pos);
+
+    // Set rotation and translation matrix
+    gte_SetRotMatrix(WORLD_SPACE);
+    gte_SetTransMatrix(WORLD_SPACE);
+
+    // Draws each triangle
+    for(size_t j=0; j < 4; j++)
+    {
+        // Load the first 3 vertices of a quad to the GTE
+        gte_ldv3(
+            &cross_plane_verts[cross_plane_indexes[j].v0],
+            &cross_plane_verts[cross_plane_indexes[j].v1],
+            &cross_plane_verts[cross_plane_indexes[j].v2]
+        );
+
+        // Rotation, Translation and Perspective Triple
+        gte_rtpt();
+
+        // Compute normal direction for backface culling
+        gte_nclip();
+
+        // Store result of cross product (nclip) in p
+        gte_stopz(&p);
+
+        // Initialize a quad primitive
+        setPolyFT3(pol3);
+
+        // Set the projected vertices to the primitive
+        gte_stsxy0(&pol3->x0);
+        gte_stsxy1(&pol3->x1);
+        gte_stsxy2(&pol3->x2);
+
+        // Calculate average Z for depth sorting and store result in p
+        gte_avsz3();
+        gte_stotz(&p);
+
+        // Skip if clipping off
+        // (the shift right operator is to scale the depth precision)
+        if (p > OT_LEN || p < 25)
+            return;
+
+        // Load primitive color even though gte_ncs() doesn't use it.
+        // This is so the GTE will output a color result with the
+        // correct primitive code.
+        gte_ldrgb(&pol3->r0);
+
+        setRGB0(pol3, 127, 127, 127);
+
+        // Set the UVs
+        INDEX tindex = cross_plane_indexes[j];
+        setUV3(
+            pol3,
+            cross_uvs[tindex.v0].vx, cross_uvs[tindex.v0].vy,
+            cross_uvs[tindex.v1].vx, cross_uvs[tindex.v1].vy,
+            cross_uvs[tindex.v2].vx, cross_uvs[tindex.v2].vy
+        );
+
+        pol3->tpage = texture_tpage;
+        pol3->clut = texture_clut;
+
+        // Sort primitive to the ordering table
+        addPrim(active_buff->ot + p, pol3);
+
+        // Advance to make another primitive
+        // pol3++;
+        ctx->nextpri = (char *)(pol3 + sizeof(POLY_FT3));
+
+        // Draw the wireframe
+        line = (LINE_F4 *)ctx->nextpri;
+        setLineF4(line);
+        setSemiTrans(line, 1);
+        setRGB0(line, 40, 10, 10);
+
+        line->x0 = pol3->x0; line->y0 = pol3->y0;
+        line->x1 = pol3->x1; line->y1 = pol3->y1;
+        line->x2 = pol3->x2; line->y2 = pol3->y2;
+
+        addPrim(active_buff->ot + (p >> 2), line);
+        line++;
+
+        pol3 = (POLY_FT3 *)line;
+    }
+
+    // Update nextpri variable
+    ctx->nextpri = (char *)line;
+}
+
 void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
 {
     int i, p;
@@ -177,9 +286,9 @@ void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SV
     {
         // Load the first 3 vertices of a quad to the GTE
         gte_ldv3(
-            &vertical_plane_verts[vertical_plane_indices[j].v0],
-            &vertical_plane_verts[vertical_plane_indices[j].v1],
-            &vertical_plane_verts[vertical_plane_indices[j].v2]
+            &vertical_plane_verts[vertical_plane_indexes[j].v0],
+            &vertical_plane_verts[vertical_plane_indexes[j].v1],
+            &vertical_plane_verts[vertical_plane_indexes[j].v2]
         );
 
         // Rotation, Translation and Perspective Triple
@@ -200,7 +309,7 @@ void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SV
         gte_stsxy2(&pol4->x2);
 
         // Compute the last vertex and set the result
-        gte_ldv0(&vertical_plane_verts[vertical_plane_indices[j].v3]);
+        gte_ldv0(&vertical_plane_verts[vertical_plane_indexes[j].v3]);
         gte_rtps();
         gte_stsxy(&pol4->x3);
 
@@ -294,9 +403,9 @@ void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVE
     {
         // Load the first 3 vertices of a quad to the GTE
         gte_ldv3(
-            &sub_plane_verts[subdivided_plane_indices[j].v0],
-            &sub_plane_verts[subdivided_plane_indices[j].v1],
-            &sub_plane_verts[subdivided_plane_indices[j].v2]
+            &sub_plane_verts[subdivided_plane_indexes[j].v0],
+            &sub_plane_verts[subdivided_plane_indexes[j].v1],
+            &sub_plane_verts[subdivided_plane_indexes[j].v2]
         );
 
         // Rotation, Translation and Perspective Triple
@@ -317,7 +426,7 @@ void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVE
         gte_stsxy2(&pol4->x2);
 
         // Compute the last vertex and set the result
-        gte_ldv0(&sub_plane_verts[subdivided_plane_indices[j].v3]);
+        gte_ldv0(&sub_plane_verts[subdivided_plane_indexes[j].v3]);
         gte_rtps();
         gte_stsxy(&pol4->x3);
 
@@ -386,12 +495,15 @@ void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVE
 
 static void SortPlanes(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
 {
-    VECTOR pos_r = {pos.vx + 200, pos.vy, pos.vz};
-    VECTOR pos_l = {pos.vx - 200, pos.vy, pos.vz};
+    VECTOR pos_simple = {pos.vx - 300, pos.vy, pos.vz};
+    VECTOR pos_cross = {pos.vx - 100, pos.vy, pos.vz};
+    VECTOR pos_vert = {pos.vx + 100, pos.vy, pos.vz};
+    VECTOR pos_subd = {pos.vx + 300, pos.vy, pos.vz};
 
-    SortSimplePlane(ctx, texture, pos_l, rot);
-    SortVerticalSubPlane(ctx, texture, pos, rot);
-    SortSubdividedPlane(ctx, texture, pos_r, rot);
+    SortSimplePlane(ctx, texture, pos_simple, rot);
+    SortCrossPlane(ctx, texture, pos_cross, rot);
+    SortVerticalSubPlane(ctx, texture, pos_vert, rot);
+    SortSubdividedPlane(ctx, texture, pos_subd, rot);
 }
 
 #endif

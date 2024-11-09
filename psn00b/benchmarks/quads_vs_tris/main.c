@@ -84,7 +84,7 @@ int main()
             }
 
             // Increase?decrease  number of cubes
-            if (pad_pressed(PAD1, PAD_R1) && num_cubes < 780)
+            if (pad_pressed(PAD1, PAD_R1) && num_cubes < MAX_CUBES)
             {
                 num_cubes += 2;
             }

@@ -35,6 +35,8 @@ uint8_t method = 0;
 // Number of faces of a cube
 #define CUBE_FACES 6
 
+#define MAX_CUBES 780
+
 // Light matrix
 // Each row represents one light source position
 MATRIX LIGHT_MTX = {
