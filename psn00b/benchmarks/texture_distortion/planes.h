@@ -3,6 +3,7 @@
 
 #include "display.h"
 #include <stdio.h>
+#include <stdint-gcc.h>
 #include <stdlib.h>
 
 // Cube defaults
@@ -21,10 +22,18 @@ SVECTOR simple_plane_verts[] = {
 };
 // Cross-like subdivided plane mesh
 SVECTOR cross_plane_verts[] = {
-    {-100, 100, 0}, {100, 100, 0}, {100, -100, 0}, {-100, -100, 0}, {0, 0, 0}
+    {-100, 100, 0},
+    {100, 100, 0},
+    {100, -100, 0},
+    {-100, -100, 0},
+    {0, 0, 0}
 };
 DVECTOR cross_uvs[] = {
-    {0, 255}, {255, 255}, {255, 0}, {0, 0}, {127, 127}
+    {0, 255},
+    {255, 255},
+    {255, 0},
+    {0, 0},
+    {127, 127}
 };
 // Vertically subdivided plane mesh
 SVECTOR vertical_plane_verts[] = {
@@ -114,7 +123,7 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
 
     // Skip if clipping off
     // (the shift right operator is to scale the depth precision)
-    if (p > OT_LEN || p < 25)
+    if (p > OT_LEN || p < 16)
         return;
 
     // Set the UVs
@@ -163,7 +172,7 @@ void SortSimplePlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR
 
 void SortCrossPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
 {
-    int i, p;
+    int i, p, l;
 
     POLY_FT3 *pol3 = (POLY_FT3 *)ctx->nextpri;
     LINE_F3 *line;
@@ -199,7 +208,7 @@ void SortCrossPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR 
         // Store result of cross product (nclip) in p
         gte_stopz(&p);
 
-        // Initialize a quad primitive
+        // Initialize a tris primitive
         setPolyFT3(pol3);
 
         // Set the projected vertices to the primitive
@@ -213,8 +222,10 @@ void SortCrossPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR 
 
         // Skip if clipping off
         // (the shift right operator is to scale the depth precision)
-        if (p > OT_LEN || p < 25)
-            return;
+        if (p > OT_LEN || p < 16) {
+            l = 0;
+            continue;
+        }
 
         // Load primitive color even though gte_ncs() doesn't use it.
         // This is so the GTE will output a color result with the
@@ -243,8 +254,8 @@ void SortCrossPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR 
         ctx->nextpri = (char *)(pol3 + sizeof(POLY_FT3));
 
         // Draw the wireframe
-        line = (LINE_F4 *)ctx->nextpri;
-        setLineF4(line);
+        line = (LINE_F3 *)ctx->nextpri;
+        setLineF3(line);
         setSemiTrans(line, 1);
         setRGB0(line, 40, 10, 10);
 
@@ -256,15 +267,16 @@ void SortCrossPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR 
         line++;
 
         pol3 = (POLY_FT3 *)line;
+        l = 1;
     }
 
     // Update nextpri variable
-    ctx->nextpri = (char *)line;
+    ctx->nextpri = l ? (char *)line : (char*)pol3;
 }
 
 void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
 {
-    int i, p;
+    int i, p, l;
 
     POLY_FT4 *pol4 = (POLY_FT4 *)ctx->nextpri;
     LINE_F3 *line;
@@ -314,13 +326,16 @@ void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SV
         gte_stsxy(&pol4->x3);
 
         // Calculate average Z for depth sorting and store result in p
-        gte_avsz4();
+        gte_avsz3();
         gte_stotz(&p);
 
         // Skip if clipping off
         // (the shift right operator is to scale the depth precision)
-        if (p > OT_LEN || p < 25)
-            return;
+        if (p > OT_LEN || p < 16)
+        {
+            l = 0;
+            continue;
+        }
 
         // Load primitive color even though gte_ncs() doesn't use it.
         // This is so the GTE will output a color result with the
@@ -373,15 +388,16 @@ void SortVerticalSubPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SV
         addPrim(active_buff->ot + (p >> 2), line);
         line++;
         pol4 = (POLY_FT4 *)line;
+        l = 1;
     }
 
     // Update nextpri variable
-    ctx->nextpri = (char *)line;
+    ctx->nextpri = l ? (char *)line : (char*)pol4;
 }
 
 void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVECTOR rot)
 {
-    int i, p;
+    int i, p, l;
 
     POLY_FT4 *pol4 = (POLY_FT4 *)ctx->nextpri;
     LINE_F3 *line;
@@ -436,8 +452,11 @@ void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVE
 
         // Skip if clipping off
         // (the shift right operator is to scale the depth precision)
-        if (p > OT_LEN || p < 30)
-            return;
+        if (p > OT_LEN || p < 16)
+        {
+            l = 0;
+            continue;
+        }
 
         setRGB0(pol4, 127, 127, 127);
 
@@ -486,10 +505,11 @@ void SortSubdividedPlane(RenderContext *ctx, TIM_IMAGE *texture, VECTOR pos, SVE
         addPrim(active_buff->ot + (p >> 2), line);
         line++;
         pol4 = (POLY_FT4 *)line;
+        l = 1;
     }
 
     // Update nextpri variable
-    ctx->nextpri = (char *)pol4;
+    ctx->nextpri = l ? (char *)line : (char *)pol4;
 }
 
 

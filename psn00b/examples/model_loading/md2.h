@@ -4,7 +4,7 @@
 #include "display.h"
 #include <psxgpu.h>
 #include <psxgte.h>
-#include <stdint.h>
+#include <stdint-gcc.h>
 
 // Original Quake II MD2 structure
 /**
@@ -35,6 +35,20 @@ typedef struct _MD2_Header
     int offset_glcmds; /* offset OpenGL command data */
     int offset_end;    /* offset end of file */
 } MD2_Header;
+
+typedef struct _PSX_MD2_Header
+{
+    uint32_t framesize;
+    uint32_t num_vertices;
+    uint32_t num_st;
+    uint32_t num_tris;
+    uint32_t num_frames;
+
+    uint32_t offset_st;
+    uint32_t offset_tris;
+    uint32_t offset_frames;
+    uint32_t offset_end;
+} MDX_Header;
 
 typedef float MD2_Vec3[3];
 typedef int MD2_Vec3i[3];
@@ -72,6 +86,14 @@ typedef struct _MD2_Frame
     MD2_Vertex *verts;  /* list of frame's vertices */
 } MD2_Frame;
 
+typedef struct _MD2_PSX_Frame
+{
+    SVECTOR scale;     /* scale factor of each frame */
+    SVECTOR translate; /* translation vector */
+    char name[16];      /* frame name */
+    MD2_Vertex *verts;  /* list of frame's vertices */
+} MDX_Frame;
+
 typedef struct _MD2_FrameI
 {
     MD2_Vec3i scale;
@@ -85,9 +107,19 @@ typedef struct _MD2_M
     MD2_Header *head;
     MD2_TexCoord *texcoords;
     MD2_Tri *tris;
-    MD2_FrameI *frames;
+    MDX_Frame *frames;
     uint16_t current_frame;
 } MD2_M;
+
+typedef struct _MD2_PSX_M
+{
+    MDX_Header *head;
+    MD2_TexCoord *texcoords;
+    MD2_Tri *tris;
+    MD2_FrameI *frames;
+    uint16_t current_frame;
+    uint16_t animation_speed;
+} MDX_M;
 
 /**
  * @brief Loads an MD2 model from a file
