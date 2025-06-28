@@ -9,4 +9,4 @@ project(
 )
 
 include_directories("../../include")
-psn00bsdk_add_executable(fps_indep_move GPREL main.c)
+psn00bsdk_add_executable(fps_independent_movement GPREL main.c)

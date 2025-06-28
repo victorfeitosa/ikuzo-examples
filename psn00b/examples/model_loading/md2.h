@@ -36,20 +36,6 @@ typedef struct _MD2_Header
     int offset_end;    /* offset end of file */
 } MD2_Header;
 
-typedef struct _PSX_MD2_Header
-{
-    uint32_t framesize;
-    uint32_t num_vertices;
-    uint32_t num_st;
-    uint32_t num_tris;
-    uint32_t num_frames;
-
-    uint32_t offset_st;
-    uint32_t offset_tris;
-    uint32_t offset_frames;
-    uint32_t offset_end;
-} MDX_Header;
-
 typedef float MD2_Vec3[3];
 typedef int MD2_Vec3i[3];
 typedef char MD2_SkinName[64];
@@ -86,14 +72,6 @@ typedef struct _MD2_Frame
     MD2_Vertex *verts;  /* list of frame's vertices */
 } MD2_Frame;
 
-typedef struct _MD2_PSX_Frame
-{
-    SVECTOR scale;     /* scale factor of each frame */
-    SVECTOR translate; /* translation vector */
-    char name[16];      /* frame name */
-    MD2_Vertex *verts;  /* list of frame's vertices */
-} MDX_Frame;
-
 typedef struct _MD2_FrameI
 {
     MD2_Vec3i scale;
@@ -111,12 +89,62 @@ typedef struct _MD2_M
     uint16_t current_frame;
 } MD2_M;
 
-typedef struct _MD2_PSX_M
+/**
+ * @brief PSX Model format
+ *
+ */
+
+typedef struct _PSX_MD2_Header
+{
+    uint16_t framesize;     // size in bytes of a frame 
+    uint16_t num_vertices;  // number of vertices per frame 
+
+    uint16_t num_st;        // number of texture coordinates 
+    uint16_t num_tris;      // number of triangles 
+
+    uint16_t num_frames;    // number of frames 
+    uint16_t pad;           // bit alignment pad 
+
+    uint32_t offset_st;     // offset texture coordinate data 
+    uint32_t offset_tris;   // offset triangle data 
+    uint32_t offset_frames; // offset frame data 
+    uint32_t offset_end;    // offset end of file 
+} MDX_Header;
+
+typedef struct _PSX_MD2_Tri
+{
+    uint16_t vertex[3];     // vertex indices of the triangle 
+    uint16_t st[3];         // tex. coord. indices 
+} MDX_Tri;
+
+typedef struct _PSX_MD2_TexCoord
+{
+    uint16_t u;             // U coord
+    uint16_t v;             // V coord
+} MDX_TexCoord;
+
+typedef struct _PSX_MD2_Vertex
+{
+    uint8_t v[3];           // position, compressed in a 256x256 grid 
+    uint8_t normalIndex;    // normal vector index 
+} MDX_Vertex;
+
+// MD2 animation frame
+typedef struct _PSX_MD2_Frame
+{
+    SVECTOR scale;     /* scale factor of each frame */
+    SVECTOR translate; /* translation vector */
+    uint32_t fid;      /* frame id */
+    MD2_Vertex *verts; /* list of frame's vertices */
+} MDX_Frame;
+
+typedef struct _PSX_MD2_M
 {
     MDX_Header *head;
-    MD2_TexCoord *texcoords;
-    MD2_Tri *tris;
-    MD2_FrameI *frames;
+    MDX_TexCoord *texcoords;
+    MDX_Tri *tris;
+    MDX_Frame *frames;
+    POLY_GT3 *polys;
     uint16_t current_frame;
     uint16_t animation_speed;
 } MDX_M;
@@ -129,23 +157,13 @@ typedef struct _MD2_PSX_M
  *
  * @return size_t Size in bytes of the allocated memory for the model
  */
-size_t LoadMD2(MD2_M *md2, const unsigned char *file);
-
-/**
- * @brief Loads an MD2 model from stack memory
- *
- * @param MD2* md2Ptr Pointer that will reference the loaded model
- * @param char* md2File MD2 model data
- *
- * @return void
- */
-void LoadMD2FromMem(MD2_M *md2, const unsigned char *data);
+size_t LoadMD2(MDX_M *md2, const unsigned char *file);
 
 /**
  * @brief Sorts a loaded MD2 model
  *
  */
-void SortMD2(RenderContext *ctx, MD2_M *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, uint32_t scale);
+void SortMDX(RenderContext *ctx, MDX_M *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, uint32_t scale);
 
 /**
  * @brief Unpacks frame position based on frame translation and scale
@@ -154,6 +172,6 @@ void SortMD2(RenderContext *ctx, MD2_M *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVE
  * @param frame current frame coordinates to unpack
  * @return SVECTOR vector of unpacked positions to be used by the GTE
  */
-SVECTOR md2_unpack_pos(MD2_M *md2, uint16_t frame);
+SVECTOR md2_unpack_pos(MDX_M *md2, uint16_t frame);
 
 #endif // _MD2_H_

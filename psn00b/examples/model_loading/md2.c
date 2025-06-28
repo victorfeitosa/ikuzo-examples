@@ -1,40 +1,44 @@
-#include "md2.h"
 #include "fixed_point.h"
+#include "md2.h"
 
 static MATRIX WORLD_SPACE;
 
-inline SVECTOR md2_unpack_pos(MD2_M *md2, uint16_t frame)
+inline SVECTOR mdx_unpack_pos(MDX_M *mdx, uint16_t frame)
 {
     return (SVECTOR){0, 0, 0};
 }
 
-size_t LoadMD2(MD2_M *md2, const unsigned char *file)
+size_t Loadmdx(MDX_M *mdx, const unsigned char *file)
 {
 }
 
-void LoadMD2FromMem(MD2_M *md2, const unsigned char *data)
+void LoadmdxFromMem(MDX_M *mdx, const unsigned char *data)
 {
-    md2->head = (MD2_Header *)&data[0];
+    mdx->head = (mdx_Header *)&data[0];
 
-    size_t offset_st = md2->head->offset_st;
-    size_t offset_tris = md2->head->offset_tris;
-    size_t offset_frames = md2->head->offset_frames;
+    size_t offset_st = mdx->head->offset_st;
+    size_t offset_tris = mdx->head->offset_tris;
+    size_t offset_frames = mdx->head->offset_frames;
 
-    md2->texcoords = (MD2_TexCoord *)(data + offset_st);
-    md2->tris = (MD2_Tri *)(data + offset_tris);
-    md2->frames = (MD2_FrameI *)(data + offset_frames);
-    md2->current_frame = 0;
+    mdx->texcoords = (mdx_TexCoord *)(data + offset_st);
+    mdx->tris = (mdx_Tri *)(data + offset_tris);
+    mdx->frames = (mdx_FrameI *)(data + offset_frames);
+    mdx->current_frame = 0;
 
     // Transform all frame translation and scale to fiex point numbers
-    for(int i=0; i < md2->head->num_frames; i++)
+    for (int i = 0; i < mdx->head->num_frames; i++)
     {
-        MD2_FrameI *fr = (MD2_FrameI *)((unsigned char *)md2->frames + i * md2->head->framesize);
-        fr->scale[0] = ftofix(fr->scale[0]); fr->scale[1] = ftofix(fr->scale[1]); fr->scale[2] = ftofix(fr->scale[2]); 
-        fr->translate[0] = ftofix(fr->translate[0]); fr->translate[1] = ftofix(fr->translate[1]); fr->translate[2] = ftofix(fr->scale[2]); 
+        mdx_FrameI *fr = (mdx_FrameI *)((unsigned char *)mdx->frames + i * mdx->head->framesize);
+        fr->scale[0] = ftofix(fr->scale[0]);
+        fr->scale[1] = ftofix(fr->scale[1]);
+        fr->scale[2] = ftofix(fr->scale[2]);
+        fr->translate[0] = ftofix(fr->translate[0]);
+        fr->translate[1] = ftofix(fr->translate[1]);
+        fr->translate[2] = ftofix(fr->scale[2]);
     }
 }
 
-void SortMD2(RenderContext *ctx, MD2_M *md2, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, uint32_t scale)
+void Sortmdx(RenderContext *ctx, MDX_M *mdx, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, uint32_t scale)
 {
     int i, p;
     POLY_FT3 *pol3 = (POLY_FT3 *)ctx->nextpri;
@@ -43,8 +47,8 @@ void SortMD2(RenderContext *ctx, MD2_M *md2, TIM_IMAGE *skin, VECTOR pos, SVECTO
     uint16_t texture_tpage = getTPage(skin->mode, 1, skin->prect->x, skin->prect->y);
     uint16_t texture_clut = getClut(skin->crect->x, skin->crect->y);
 
-    MD2_FrameI *fr = (MD2_FrameI *)((unsigned char *)md2->frames + md2->current_frame * md2->head->framesize);
-    MD2_Tri *tris = (MD2_Tri *)md2->tris;
+    mdx_FrameI *fr = (mdx_FrameI *)((unsigned char *)mdx->frames + mdx->current_frame * mdx->head->framesize);
+    mdx_Tri *tris = (mdx_Tri *)mdx->tris;
 
     FntPrint(-1, "F(%d, %d, %d)", fr->scale[0], fr->scale[1], fr->scale[2]);
 
@@ -54,14 +58,14 @@ void SortMD2(RenderContext *ctx, MD2_M *md2, TIM_IMAGE *skin, VECTOR pos, SVECTO
     gte_SetRotMatrix(&WORLD_SPACE);
     gte_SetTransMatrix(&WORLD_SPACE);
 
-    for (i = 0; i < md2->head->num_tris; i++)
+    for (i = 0; i < mdx->head->num_tris; i++)
     {
-        MD2_Tri *tri = (MD2_Tri *)md2->tris + i;
+        mdx_Tri *tri = (mdx_Tri *)mdx->tris + i;
         unsigned short *vids = tri->vertex; // Vertex ids of each triangle in this frame
         unsigned short *uvids = tri->st;    // UV ids of each triangle in this frame
 
-        MD2_Vertex *verts = (MD2_Vertex *)&fr->verts;       // Position of every vertex in this frame
-        MD2_TexCoord *uvs = (MD2_TexCoord *)md2->texcoords; // Model UVs
+        mdx_Vertex *verts = (mdx_Vertex *)&fr->verts;       // Position of every vertex in this frame
+        mdx_TexCoord *uvs = (mdx_TexCoord *)mdx->texcoords; // Model UVs
 
         // Vertex position vectors, comes from the unpacked position of the vertices in the frame
         // We convert coords from right-handed orientation to left handed
