@@ -22,47 +22,55 @@
  */
 
 #include "controller.h"
-#include "cubes.h"
+#include "planes.h"
 #include "display.h"
 #include <psxpad.h>
+
+extern const uint32_t checker_tex[];
+extern const uint32_t fence_tex[];
+extern const uint32_t wall_tex[];
 
 // Main function
 int main()
 {
     RenderContext context;
     context.active_buffer = 0;
+    TIM_IMAGE tims[3];
+    int curr_tim, select;
+    const uint32_t *textures[] = {checker_tex, fence_tex, wall_tex};
 
     // Init graphics and controllers
     InitDisplay(&context, 1);
     InitControllers();
-    // InitCubeMem();
 
-    MATRIX mtx, lmtx; // Rotation matrices for geometry and lighting
+    MATRIX mtx;
     WORLD_SPACE = &mtx;
-    LIGHT_SPACE = &lmtx;
+
+    /* Load .TIM files */
+    for (size_t i = 0; i < 3; i++)
+    {
+        GetTimInfo(textures[i], &tims[i]);
+        if (tims[i].mode & 0x8)
+            LoadImage(tims[i].crect, tims[i].caddr); /* Upload CLUT if present */
+        LoadImage(tims[i].prect, tims[i].paddr);     /* Upload texture to VRAM */
+    }
+
+    curr_tim = select = 0;
 
     // Main loop
     while (1)
     {
-        FntPrint(-1, "FPS: %d\n", fps);
-        FntPrint(-1, "#CUBES RENDERED: %d\n", num_cubes);
-        FntPrint(-1, "#POLYS RENDERED: %d\n", num_faces);
-        FntPrint(-1, "METHOD: %s\n", method == 0 ? "Tris" : "Quads");
-
-        // Constantly rotate cubes
-        rot.vx += 16;
-        rot.vy += 24;
         // Check inputs
         if (pad_enabled(PAD1, PAD_ID_DIGITAL))
         {
             // Move cubes
             if (pad_pressed(PAD1, PAD_UP))
             {
-                pos.vy += 8;
+                pos.vy -= 8;
             }
             else if (pad_pressed(PAD1, PAD_DOWN))
             {
-                pos.vy -= 8;
+                pos.vy += 8;
             }
 
             if (pad_pressed(PAD1, PAD_LEFT))
@@ -76,31 +84,49 @@ int main()
 
             if (pad_pressed(PAD1, PAD_R2))
             {
-                pos.vz += 50;
+                pos.vz -= 4;
             }
             else if (pad_pressed(PAD1, PAD_L2))
             {
-                pos.vz -= 50;
+                pos.vz += 4;
             }
 
-            // Increase?decrease  number of cubes
-            if (pad_pressed(PAD1, PAD_R1) && num_cubes < MAX_CUBES)
+            // Rotate planes
+            if (pad_pressed(PAD1, PAD_R1))
             {
-                num_cubes += 2;
+                rot.vy += 4;
             }
-            else if (pad_pressed(PAD1, PAD_L1) && num_cubes > 0)
+            else if (pad_pressed(PAD1, PAD_L1))
             {
-                num_cubes -= 2;
+                rot.vy -= 4;
             }
 
-            // Swap rendering method
             if (pad_pressed(PAD1, PAD_CROSS))
             {
-                method = 0;
+                rot.vx += 4;
             }
-            else if (pad_pressed(PAD1, PAD_CIRCLE))
+            else if (pad_pressed(PAD1, PAD_TRIANGLE))
             {
-                method = 1;
+                rot.vx -= 4;
+            }
+
+            if (pad_pressed(PAD1, PAD_CIRCLE))
+            {
+                rot.vz += 4;
+            }
+            else if (pad_pressed(PAD1, PAD_SQUARE))
+            {
+                rot.vz -= 4;
+            }
+
+            if (pad_pressed(PAD1, PAD_SELECT))
+            {
+                select = 1;
+            }
+            else if (select)
+            {
+                curr_tim = (curr_tim + 1) % 3;
+                select = 0;
             }
 
             // Force exit
@@ -110,15 +136,9 @@ int main()
             }
         }
 
-        draw_method = method == 0 ? &SortTrisCube : &SortQuadCube;
-
-        // Sort cube primitives
-        SortCubes(&context);
-
-        // Display graphics
+        SortPlanes(&context, &tims[curr_tim], pos, rot);
         DrawDisplay(&context);
 
-        // Increase frame count
         frames++;
     }
 
