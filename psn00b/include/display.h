@@ -6,7 +6,7 @@
 #include <psxetc.h>
 #include <psxgpu.h>
 #include <psxgte.h>
-#include <stdint.h>
+#include <stdint-gcc.h>
 
 // OT and Packet Buffer sizes
 #define OT_LEN 16384
@@ -80,14 +80,14 @@ static void InitDisplay(RenderContext *ctx, uint8_t initGTE)
 
     // First Draw and Display environment
     SetDefDispEnv(&ctx->draw_buffer[0].disp, 0, 0, SCREEN_XRES, SCREEN_YRES);
-    SetDefDrawEnv(&ctx->draw_buffer[0].draw, SCREEN_XRES, 0, SCREEN_XRES, SCREEN_YRES);
+    SetDefDrawEnv(&ctx->draw_buffer[0].draw, 0, SCREEN_YRES, SCREEN_XRES, SCREEN_YRES);
 
     setRGB0(&ctx->draw_buffer[0].draw, 15, 40, 80);
     ctx->draw_buffer[0].draw.isbg = 1;
     ctx->draw_buffer[0].draw.dtd = 1;
 
     // Second Draw and Display environment
-    SetDefDispEnv(&ctx->draw_buffer[1].disp, SCREEN_XRES, 0, SCREEN_XRES, SCREEN_YRES);
+    SetDefDispEnv(&ctx->draw_buffer[1].disp, 0, SCREEN_YRES, SCREEN_XRES, SCREEN_YRES);
     SetDefDrawEnv(&ctx->draw_buffer[1].draw, 0, 0, SCREEN_XRES, SCREEN_YRES);
 
     setRGB0(&ctx->draw_buffer[1].draw, 15, 40, 80);
