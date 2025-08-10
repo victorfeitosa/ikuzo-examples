@@ -53,6 +53,7 @@ dkms.conf
 
 run
 run_psx
+*.fish
 *.psx
 debug/
 release/

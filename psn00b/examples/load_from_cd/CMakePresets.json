@@ -16,7 +16,8 @@
 			"cacheVariables": {
 				"CMAKE_BUILD_TYPE": "Debug",
 				"PSN00BSDK_TC":     "",
-				"PSN00BSDK_TARGET": "mipsel-none-elf"
+				"PSN00BSDK_TARGET": "mipsel-none-elf",
+				"PLATFORM": "EMULATOR"
 			}
 		},
 		{

@@ -8,10 +8,12 @@ project(
 	HOMEPAGE_URL "https://github.com/victorfeitosa/ikuzo-examples"
 )
 
+set(CMAKE_C_STANDARD 17)
+
 include_directories("../../include")
 psn00bsdk_add_executable(load_from_cd GPREL main.c)
 
-if(PLATFORM_EMULATOR)
+if(PLATFORM STREQUAL EMULATOR)
 	add_compile_definitions(USE_PCDRV)	
-endif(PLATFORM_EMULATOR)
+endif(PLATFORM STREQUAL EMULATOR)
 
