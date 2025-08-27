@@ -2,8 +2,9 @@
 #include "display.h"
 #include "psxsn.h"
 
-void SortSprite(RenderContext *context, uint32_t x, uint32_t y, uint32_t w, uint32_t h, TIM_IMAGE *texture);
-void SortTPage(RenderContext *context, TIM_IMAGE *texture);
+void initSprite(SPRT *sprite, uint8_t *tex_data, TIM_IMAGE *tim, int x, int y, int w,  int h);
+void sortSprite(RenderContext *context, SPRT *sprite);
+void sortTPage(RenderContext *context, TIM_IMAGE *tim);
 
 int main()
 {
@@ -11,7 +12,7 @@ int main()
     context.active_buffer = 0;
     uint32_t fd;
     int32_t error = 0;
-    TIM_IMAGE texture;
+    TIM_IMAGE ball_tim;
     uint32_t img_size = 0;
     SPRT ball_sprite;
 
@@ -41,9 +42,7 @@ int main()
     init = PCread(fd, tex, img_size);
 #endif
 
-    GetTimInfo((uint32_t *)tex, &texture);
-    LoadImage(texture.crect, texture.caddr);
-    LoadImage(texture.prect, texture.paddr);
+    initSprite(&ball_sprite, tex, &ball_tim, 160, 120, 16, 16);
 
     while (1)
     {
@@ -61,10 +60,10 @@ int main()
         FntPrint(-1, "LOADING DATA FROM CD\n");
 #endif
         FntPrint(-1, "TIM SIZE: %db\n", img_size);
-        FntPrint(-1, "Tim: %d:%d - %dx%d\n", texture.prect->x, texture.prect->y, texture.prect->w, texture.prect->h);
+        FntPrint(-1, "Tim: %d:%d - %dx%d\n", ball_tim.prect->x, ball_tim.prect->y, ball_tim.prect->w, ball_tim.prect->h);
 
-        SortSprite(&context, 80, 80, 16, 16, &texture);
-        SortTPage(&context, &texture);
+        sortSprite(&context, &ball_sprite);
+        sortTPage(&context, &ball_tim);
         DrawDisplay(&context);
     }
 
@@ -75,27 +74,35 @@ int main()
     return 0;
 }
 
-void SortSprite(RenderContext *context, uint32_t x, uint32_t y, uint32_t w, uint32_t h, TIM_IMAGE *texture)
+void initSprite(SPRT *sprite, uint8_t *tex_data, TIM_IMAGE *tim, int x, int y, int w,  int h)
+{
+    // Load tim info, CLUT and Data
+    GetTimInfo((uint32_t *)tex_data, tim);
+    LoadImage(tim->crect, tim->caddr);
+    LoadImage(tim->prect, tim->paddr);
+
+    // Set sprite attributes
+    setSprt(sprite);
+    setWH(sprite, w, h);
+    setXY0(sprite, x, y);
+    setUV0(sprite, 0, 0);
+    setClut(sprite, tim->crect->x, tim->crect->y);
+}
+
+void sortSprite(RenderContext *context, SPRT *sprite)
 {
     DrawEnv *buff = active_buffer(context);
-    SPRT *spr = (SPRT *)context->nextpri;
 
-    setSprt(spr);
-    setWH(spr, w, h);
-    setXY0(spr, x, y);
-    setRGB0(spr, 32 + rand() % 224, 32 + rand() % 224, 32 + rand() % 224);
-    setUV0(spr, 0, 0);
-    setClut(spr, texture->crect->x, texture->crect->y);
-
-    addPrim(buff->ot, spr);
+    setRGB0(sprite, 32 + rand() % 224, 32 + rand() % 224, 32 + rand() % 224);
+    addPrim(buff->ot, sprite);
     context->nextpri += sizeof(SPRT);
 }
 
-void SortTPage(RenderContext *context, TIM_IMAGE *texture)
+void sortTPage(RenderContext *context, TIM_IMAGE *tim)
 {
     DrawEnv *buff = active_buffer(context);
     DR_TPAGE *tp = (DR_TPAGE *)context->nextpri;
-    setDrawTPage(tp, 0, 0, getTPage(0, 0, texture->prect->x, texture->prect->y));
+    setDrawTPage(tp, 0, 0, getTPage(0, 0, tim->prect->x, tim->prect->y));
 
     addPrim(buff->ot + (OT_LEN - 1), tp);
     context->nextpri += sizeof(DR_TPAGE);
