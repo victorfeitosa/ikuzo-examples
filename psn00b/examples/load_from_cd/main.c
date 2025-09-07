@@ -1,8 +1,9 @@
 #include "controller.h"
 #include "display.h"
+#include "psxcd.h"
 #include "psxsn.h"
 
-void initSprite(SPRT *sprite, uint8_t *tex_data, TIM_IMAGE *tim, int x, int y, int w,  int h);
+void initSprite(SPRT *sprite, uint8_t *tex_data, TIM_IMAGE *tim, int x, int y, int w, int h);
 void sortSprite(RenderContext *context, SPRT *sprite);
 void sortTPage(RenderContext *context, TIM_IMAGE *tim);
 
@@ -35,14 +36,39 @@ int main()
 
     img_size = PClseek(fd, 0, PCDRV_SEEK_END);
     PClseek(fd, 0, PCDRV_SEEK_SET);
+#else
+    CdlDIR directory = CdOpenDir("./");
+    if (!directory)
+    {
+        error++;
+        FntPrint(-1, "Error!\n");
+    }
+
+    uint8_t command;
+    uint8_t result;
+    command = CdControlB(CdlSeekL, &directory, &result);
+
+    if (!command)
+    {
+        error++;
+        FntPrint(-1, "Error!\n");
+    }
+    else
+    {
+        FntPrint("Result: %d\n", result);
+    }
+
 #endif
     uint8_t tex[img_size];
 
 #ifdef USE_PCDRV
     init = PCread(fd, tex, img_size);
+    PCclose(fd);
+#else
+    CdCloseDir(directory);
 #endif
 
-    initSprite(&ball_sprite, tex, &ball_tim, 160, 120, 16, 16);
+    // initSprite(&ball_sprite, tex, &ball_tim, 160, 120, 16, 16);
 
     while (1)
     {
@@ -59,22 +85,19 @@ int main()
 #else
         FntPrint(-1, "LOADING DATA FROM CD\n");
 #endif
-        FntPrint(-1, "TIM SIZE: %db\n", img_size);
-        FntPrint(-1, "Tim: %d:%d - %dx%d\n", ball_tim.prect->x, ball_tim.prect->y, ball_tim.prect->w, ball_tim.prect->h);
+        // FntPrint(-1, "TIM SIZE: %db\n", img_size);
+        // FntPrint(-1, "Tim: %d:%d - %dx%d\n", ball_tim.prect->x, ball_tim.prect->y, ball_tim.prect->w,
+        //          ball_tim.prect->h);
 
-        sortSprite(&context, &ball_sprite);
-        sortTPage(&context, &ball_tim);
+        // sortSprite(&context, &ball_sprite);
+        // sortTPage(&context, &ball_tim);
         DrawDisplay(&context);
     }
-
-#ifdef USE_PCDRV
-    PCclose(fd);
-#endif
 
     return 0;
 }
 
-void initSprite(SPRT *sprite, uint8_t *tex_data, TIM_IMAGE *tim, int x, int y, int w,  int h)
+void initSprite(SPRT *sprite, uint8_t *tex_data, TIM_IMAGE *tim, int x, int y, int w, int h)
 {
     // Load tim info, CLUT and Data
     GetTimInfo((uint32_t *)tex_data, tim);

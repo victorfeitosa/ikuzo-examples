@@ -57,5 +57,7 @@ run_psx
 *.psx
 debug/
 release/
+debug_cd/
+release_cd/
 .vscode/
 .DS_Store
