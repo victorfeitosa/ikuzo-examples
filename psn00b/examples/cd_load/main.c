@@ -1,3 +1,4 @@
+#include <string.h>
 #include "controller.h"
 #include "display.h"
 #include "psxcd.h"
@@ -37,29 +38,31 @@ int main()
     img_size = PClseek(fd, 0, PCDRV_SEEK_END);
     PClseek(fd, 0, PCDRV_SEEK_SET);
 #else
-    CdlDIR directory = CdOpenDir("./");
+    CdInit();
+    CdlDIR *directory = CdOpenDir("\\CD");
     if (!directory)
     {
         error++;
-        FntPrint(-1, "Error!\n");
     }
 
     uint8_t command;
     uint8_t result;
-    command = CdControlB(CdlSeekL, &directory, &result);
+    CdlFILE ball_file;
 
-    if (!command)
+    result = CdReadDir(directory, &ball_file);
+    // Scans the directory until it finds a file
+    while (strstr(ball_file.name, ";") == NULL && result)
+    {
+        result = CdReadDir(directory, &ball_file);
+    }
+
+    if (!ball_file.size)
     {
         error++;
-        FntPrint(-1, "Error!\n");
-    }
-    else
-    {
-        FntPrint("Result: %d\n", result);
     }
 
 #endif
-    uint8_t tex[img_size];
+    // uint8_t tex[img_size];
 
 #ifdef USE_PCDRV
     init = PCread(fd, tex, img_size);

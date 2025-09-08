@@ -15,11 +15,8 @@
 			<file name="SYSTEM.CNF"		type="data" source="${PROJECT_SOURCE_DIR}/system.cnf" />
 			<file name="cd_load.EXE"	type="data" source="cd_load.exe" />
 
-			<dir name="DIRA">
-				<dir name="DIRAA">
-				</dir>
-			</dir>
-			<dir name="DIRB">
+			<dir name="cd">
+				<file name="ball" type="data" source="${PROJECT_SOURCE_DIR}/cd/ball.tim"></file>
 			</dir>
 
 			<dummy sectors="1024"/>

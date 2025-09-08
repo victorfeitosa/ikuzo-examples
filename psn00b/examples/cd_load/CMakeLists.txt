@@ -12,19 +12,19 @@ set(CMAKE_C_STANDARD 17)
 
 include_directories("../../include")
 psn00bsdk_add_executable(cd_load GPREL main.c)
-psn00bsdk_add_cd_image(
-	cd_load_iso cd_load iso.xml
-	DEPENDS cd_load system.cnf
-)
 
 if(PLATFORM STREQUAL EMULATOR)
-	add_compile_definitions(USE_PCDRV)	
+	add_compile_definitions(USE_PCDRV)
+else()
+	psn00bsdk_add_cd_image(
+		cd_load_iso cd_load iso.xml
+		DEPENDS cd_load system.cnf
+	)
+	install(
+		FILES
+			${PROJECT_BINARY_DIR}/cd_load.bin
+			${PROJECT_BINARY_DIR}/cd_load.cue
+		TYPE BIN
+	)
 endif(PLATFORM STREQUAL EMULATOR)
-
-install(
-	FILES
-		${PROJECT_BINARY_DIR}/cd_load.bin
-		${PROJECT_BINARY_DIR}/cd_load.cue
-	TYPE BIN
-)
 
