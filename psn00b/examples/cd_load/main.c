@@ -1,8 +1,8 @@
-#include <string.h>
 #include "controller.h"
 #include "display.h"
 #include "psxcd.h"
 #include "psxsn.h"
+#include <string.h>
 
 void initSprite(SPRT *sprite, uint8_t *tex_data, TIM_IMAGE *tim, int x, int y, int w, int h);
 void sortSprite(RenderContext *context, SPRT *sprite);
@@ -22,6 +22,7 @@ int main()
     InitDisplay(&context, 0);
 
 #ifdef USE_PCDRV
+// Init PCDRV, open the file, get image size in bytes with SEEK
     uint8_t init = PCinit();
     if (init != 0)
     {
@@ -38,6 +39,7 @@ int main()
     img_size = PClseek(fd, 0, PCDRV_SEEK_END);
     PClseek(fd, 0, PCDRV_SEEK_SET);
 #else
+// Init CD, open directory, read directory until it finds a file
     CdInit();
     CdlDIR *directory = CdOpenDir("\\CD");
     if (!directory)
@@ -56,22 +58,27 @@ int main()
         result = CdReadDir(directory, &ball_file);
     }
 
-    if (!ball_file.size)
+    if (!ball_file.size || !result)
     {
         error++;
     }
 
 #endif
-    // uint8_t tex[img_size];
 
 #ifdef USE_PCDRV
+// create texture buffer, read data into buffer, close PCDRV file
+    uint8_t tex[img_size];
     init = PCread(fd, tex, img_size);
     PCclose(fd);
 #else
+// create sector buffer, read sector, wait for read to finish, close CD directory
+    uint8_t tex[2048];
+    CdRead(1, tex, CdlModeSpeed);
+    CdReadSync(0, result);
     CdCloseDir(directory);
 #endif
+    initSprite(&ball_sprite, tex, &ball_tim, 160, 120, 16, 16);
 
-    // initSprite(&ball_sprite, tex, &ball_tim, 160, 120, 16, 16);
 
     while (1)
     {
@@ -88,12 +95,12 @@ int main()
 #else
         FntPrint(-1, "LOADING DATA FROM CD\n");
 #endif
-        // FntPrint(-1, "TIM SIZE: %db\n", img_size);
-        // FntPrint(-1, "Tim: %d:%d - %dx%d\n", ball_tim.prect->x, ball_tim.prect->y, ball_tim.prect->w,
-        //          ball_tim.prect->h);
+        FntPrint(-1, "TIM SIZE: %db\n", img_size);
+        FntPrint(-1, "Tim: %d:%d - %dx%d\n", ball_tim.prect->x, ball_tim.prect->y, ball_tim.prect->w,
+                 ball_tim.prect->h);
 
-        // sortSprite(&context, &ball_sprite);
-        // sortTPage(&context, &ball_tim);
+        sortSprite(&context, &ball_sprite);
+        sortTPage(&context, &ball_tim);
         DrawDisplay(&context);
     }
 
