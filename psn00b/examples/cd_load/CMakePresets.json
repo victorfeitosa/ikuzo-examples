@@ -1,0 +1,70 @@
+{
+	"version": 3,
+	"cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 21,
+		"patch": 0
+	},
+	"configurePresets": [
+		{
+			"name":          "debug",
+			"displayName":   "Debug configuration",
+			"description":   "Debug configuration for a Psn00bSDK program",
+			"generator":     "Ninja",
+			"toolchainFile": "$env{PSN00BSDK_LIBS}/cmake/sdk.cmake",
+			"binaryDir":     "${sourceDir}/debug",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"PSN00BSDK_TC":     "",
+				"PSN00BSDK_TARGET": "mipsel-none-elf",
+				"PLATFORM": "EMULATOR"
+			}
+		},
+		{
+			"name":          "release",
+			"displayName":   "Release configuration",
+			"description":   "Release configuration for a Psn00bSDK program",
+			"generator":     "Ninja",
+			"toolchainFile": "$env{PSN00BSDK_LIBS}/cmake/sdk.cmake",
+			"binaryDir":     "${sourceDir}/release",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"PSN00BSDK_TC":     "",
+				"PSN00BSDK_TARGET": "mipsel-none-elf",
+				"PLATFORM": "EMULATOR"
+			},
+			"warnings": {
+				"dev": false
+			}
+		},
+		{
+			"name":          "debug_cd",
+			"displayName":   "Debug configuration ISO",
+			"description":   "Debug configuration for an ISO image Psn00bSDK program",
+			"generator":     "Ninja",
+			"toolchainFile": "$env{PSN00BSDK_LIBS}/cmake/sdk.cmake",
+			"binaryDir":     "${sourceDir}/debug_cd",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"PSN00BSDK_TC":     "",
+				"PSN00BSDK_TARGET": "mipsel-none-elf"
+			}
+		},
+		{
+			"name":          "release_cd",
+			"displayName":   "Release configuration ISO",
+			"description":   "Release configuration for an ISO image Psn00bSDK program",
+			"generator":     "Ninja",
+			"toolchainFile": "$env{PSN00BSDK_LIBS}/cmake/sdk.cmake",
+			"binaryDir":     "${sourceDir}/release_cd",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"PSN00BSDK_TC":     "",
+				"PSN00BSDK_TARGET": "mipsel-none-elf"
+			},
+			"warnings": {
+				"dev": false
+			}
+		}
+	]
+}

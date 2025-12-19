@@ -53,8 +53,11 @@ dkms.conf
 
 run
 run_psx
+*.fish
 *.psx
 debug/
 release/
+debug_cd/
+release_cd/
 .vscode/
 .DS_Store
