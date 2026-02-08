@@ -14,7 +14,7 @@ int main()
     context.active_buffer = 0;
     TIM_IMAGE tim;
 
-    MD2_M *md2;
+    // MDX *md2;
 
     LoadMD2FromMem(md2, mummy);
     VECTOR position = {0, 0, 400};

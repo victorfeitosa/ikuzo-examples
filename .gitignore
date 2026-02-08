@@ -55,6 +55,7 @@ run
 run_psx
 *.fish
 *.psx
+build/
 debug/
 release/
 debug_cd/

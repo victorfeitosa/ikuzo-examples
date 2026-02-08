@@ -94,34 +94,47 @@ typedef struct _MD2_M
  *
  */
 
+typedef enum _PSX_MDX_Material
+{
+    MDX_MAT_FLAT = 0,
+    MDX_MAT_GORAUND,
+    MDX_MAT_FLAT_TEXTURED,
+    MDX_MAT_GORAUND_TEXTURED,
+    MDX_MAT_WIREFRAME,
+} MDX_Material;
+
+MDX_Material RENDER_MAT = MDX_MAT_GORAUND_TEXTURED;
+
 typedef struct _PSX_MD2_Header
 {
     uint16_t framesize;     // size in bytes of a frame 
     uint16_t num_vertices;  // number of vertices per frame 
 
-    uint16_t num_st;        // number of texture coordinates 
-    uint16_t num_tris;      // number of triangles 
+    uint16_t num_uv;   // number of texture coordinates
+    uint16_t num_tris; // number of triangles
 
-    uint16_t num_frames;    // number of frames 
-    uint16_t pad;           // bit alignment pad 
+    uint16_t num_frames; // number of frames
+    uint16_t mat;        // type of rendering (F3, F3, FT3, GT3, LINE)
+    uint16_t clut;       // texture CLUT
+    uint16_t tpage;      // texture page
 
-    uint32_t offset_st;     // offset texture coordinate data 
-    uint32_t offset_tris;   // offset triangle data 
-    uint32_t offset_frames; // offset frame data 
-    uint32_t offset_end;    // offset end of file 
+    uint32_t offset_uv;     // offset texture coordinate data
+    uint32_t offset_tris;   // offset triangle data
+    uint32_t offset_frames; // offset frame data
+    uint32_t offset_end;    // offset end of file
 } MDX_Header;
 
-typedef struct _PSX_MD2_Tri
+typedef struct _PSX_MD2_POLY
 {
-    uint16_t vertex[3];     // vertex indices of the triangle 
-    uint16_t st[3];         // tex. coord. indices 
-} MDX_Tri;
+    uint16_t vertex[3]; // vertex indices of the poly
+    uint16_t uv[3];     // tex coord, vertex colours, clut, tpage
+} MDX_POLY;
 
-typedef struct _PSX_MD2_TexCoord
+typedef struct _PSX_MD2_UV
 {
-    uint16_t u;             // U coord
-    uint16_t v;             // V coord
-} MDX_TexCoord;
+    uint8_t u;
+    uint8_t v;
+} MDX_UV;
 
 typedef struct _PSX_MD2_Vertex
 {
@@ -134,36 +147,45 @@ typedef struct _PSX_MD2_Frame
 {
     SVECTOR scale;     /* scale factor of each frame */
     SVECTOR translate; /* translation vector */
-    uint32_t fid;      /* frame id */
-    MD2_Vertex *verts; /* list of frame's vertices */
 } MDX_Frame;
+
+typedef struct _PSX_MD2_SKIN
+{
+    uint16_t tpage;
+    uint16_t clut;
+} MDX_Tex;
 
 typedef struct _PSX_MD2_M
 {
-    MDX_Header *head;
-    MDX_TexCoord *texcoords;
-    MDX_Tri *tris;
-    MDX_Frame *frames;
-    POLY_GT3 *polys;
+    MDX_Header head;
     uint16_t current_frame;
     uint16_t animation_speed;
-} MDX_M;
+    MDX_Vertex *vertices;
+    MDX_POLY *polys;
+    MDX_Frame *frames;
+} MDX;
 
 /**
  * @brief Loads an MD2 model from a file
  *
- * @param MD2* md2Ptr Pointer that will reference the loaded model
- * @param char* md2File MD2 model file
+ * @param char* file MD2 model file
+ * @param MDX* mdx Dest pointer that will reference the loaded model
  *
  * @return size_t Size in bytes of the allocated memory for the model
  */
-size_t LoadMD2(MDX_M *md2, const unsigned char *file);
+size_t LoadMDX(const unsigned char *file, MDX *mdx);
 
 /**
- * @brief Sorts a loaded MD2 model
+ * @brief Sorts a loaded MD2 model into the OT
  *
+ * @param RenderContext* ctx Render context to sort the model into
+ * @param MDX* mdx Pointer to the MDX in memory
+ * @param VECTOR pos Position
+ * @param SVECTOR rot Rotation
+ * @param uint32_t scale Scale
+ * @param MDX_Tex* tex Model texture, can be NULL
  */
-void SortMDX(RenderContext *ctx, MDX_M *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVECTOR rot, uint32_t scale);
+void SortMDX(RenderContext *ctx, MDX *mdx, VECTOR pos, SVECTOR rot, uint32_t scale, MDX_Tex *tex);
 
 /**
  * @brief Unpacks frame position based on frame translation and scale
@@ -172,6 +194,6 @@ void SortMDX(RenderContext *ctx, MDX_M *md2Ptr, TIM_IMAGE *skin, VECTOR pos, SVE
  * @param frame current frame coordinates to unpack
  * @return SVECTOR vector of unpacked positions to be used by the GTE
  */
-SVECTOR md2_unpack_pos(MDX_M *md2, uint16_t frame);
+SVECTOR mdx_unpack_pos(MDX *mdx, uint16_t frame);
 
 #endif // _MD2_H_
