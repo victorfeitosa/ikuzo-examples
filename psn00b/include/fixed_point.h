@@ -3,13 +3,26 @@
 
 typedef int Fixed;
 
-#define FRACT_BITS 12
+// Standard fractional fixed point
+#define SHORT_FRAC 12
+#define LONG_FRAC 20
 #ifndef ONE
-  #define ONE (1 << FRACT_BITS)
+#define ONE (1 << SHORT_FRAC)
+
+#define inttofix(x) ((x) << SHORT_FRAC)
+#define ftofix(x) ((int)((x) * (1 << SHORT_FRAC)))
+#define fixtoint(x) ((x) >> SHORT_FRAC)
+#define fixtodouble(x) (((double)(x)) / (1 << SHORT_FRAC))
+
+// Long fractional fixed point
 #endif
-#define inttofix(x) ((x) << FRACT_BITS)
-#define ftofix(x) ((int)((x) * (1 << FRACT_BITS)))
-#define fixtoint(x) ((x) >> FRACT_BITS)
-#define fixtodouble(x) (((double)(x)) / (1 << FRACT_BITS))
+#ifndef LONG_ONE
+#define LONG_ONE (1 << LONG_FRAC)
+#endif
+
+#define inttolongfix(x) ((x) << LONG_FRAC)
+#define ftolongfix(x) ((int)((x) * (1 << LONG_FRAC)))
+#define longfixtoint(x) ((x) >> LONG_FRAC)
+#define longfixtodouble(x) (((double)(x)) / (1 << LONG_FRAC))
 
 #endif // _FIXED_POINT_H_
