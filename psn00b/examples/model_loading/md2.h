@@ -85,7 +85,7 @@ typedef struct _MD2_M
     MD2_Header *head;
     MD2_TexCoord *texcoords;
     MD2_Tri *tris;
-    MDX_Frame *frames;
+    MD2_Frame *frames;
     uint16_t current_frame;
 } MD2_M;
 
@@ -102,8 +102,6 @@ typedef enum _PSX_MDX_Material
     MDX_MAT_GORAUND_TEXTURED,
     MDX_MAT_WIREFRAME,
 } MDX_Material;
-
-MDX_Material RENDER_MAT = MDX_MAT_GORAUND_TEXTURED;
 
 typedef struct _PSX_MD2_Header
 {
@@ -145,8 +143,9 @@ typedef struct _PSX_MD2_Vertex
 // MD2 animation frame
 typedef struct _PSX_MD2_Frame
 {
-    SVECTOR scale;     /* scale factor of each frame */
-    SVECTOR translate; /* translation vector */
+    SVECTOR scale;      /* scale factor of each frame */
+    SVECTOR translate;  /* translation vector */
+    MDX_Vertex *verts;  /* list of frame's vertices */
 } MDX_Frame;
 
 typedef struct _PSX_MD2_SKIN
@@ -191,9 +190,10 @@ void SortMDX(RenderContext *ctx, MDX *mdx, VECTOR pos, SVECTOR rot, uint32_t sca
  * @brief Unpacks frame position based on frame translation and scale
  *
  * @param md2 MD2 model pointer
- * @param frame current frame coordinates to unpack
+ * @param frame_number current frame coordinates to unpack
+ * @param vertex_index vertex index to unpack
  * @return SVECTOR vector of unpacked positions to be used by the GTE
  */
-SVECTOR mdx_unpack_pos(MDX *mdx, uint16_t frame);
+SVECTOR mdx_unpack_pos(MDX *mdx, uint16_t frame_number, uint32_t vertex_index);
 
 #endif // _MD2_H_

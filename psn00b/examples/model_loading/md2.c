@@ -4,51 +4,59 @@
 #include "md2.h"
 
 static MATRIX WORLD_SPACE;
+static MDX_Material RENDER_MAT = MDX_MAT_GORAUND_TEXTURED;
 
-inline SVECTOR mdx_unpack_pos(MDX *mdx, uint16_t frame)
+inline SVECTOR mdx_unpack_pos(MDX *mdx, uint16_t frame_number, uint32_t vertex_index)
 {
-    return (SVECTOR){0, 0, 0};
+    MDX_Frame *frame = &mdx->frames[frame_number];
+    uint8_t *packed_pos = frame->verts[vertex_index].v;
+    SVECTOR pos;
+
+    pos.vx = (packed_pos[0] * frame->scale.vx) + frame->translate.vx;
+    pos.vy = (packed_pos[1] * frame->scale.vy) + frame->translate.vy;
+    pos.vz = (packed_pos[2] * frame->scale.vz) + frame->translate.vz;
+
+    return pos;
 }
 
 size_t LoadMDX(const unsigned char *file, MDX *mdx)
 {
-    uint32_t fd = PCopen(file, PCDRV_MODE_READ);
-    size_t model_size;
-    if (fd < 0)
-    {
-        return 0;
-    }
+    // uint32_t fd = PCopen(file, PCDRV_MODE_READ);
+    // size_t model_size;
+    // if (fd < 0)
+    // {
+    //     return 0;
+    // }
 
-    model_size = PClseek(fd, 0, PCDRV_SEEK_END);
-    PClseek(fd, 0, PCDRV_SEEK_SET);
+    // model_size = PClseek(fd, 0, PCDRV_SEEK_END);
+    // PClseek(fd, 0, PCDRV_SEEK_SET);
 
-    // Read MD2 header
-    MD2_Header md2_h;
-    PCread(fd, &md2_h, sizeof(MD2_Header));
+    // // Read MD2 header
+    // MD2_Header md2_h;
+    // PCread(fd, &md2_h, sizeof(MD2_Header));
 
-    mdx->head.framesize = md2_h.framesize;
-    mdx->head.num_vertices = md2_h.num_vertices;
-    mdx->head.num_uv = md2_h.num_st;
-    mdx->head.num_tris = md2_h.num_tris;
-    mdx->head.num_frames = md2_h.num_frames;
-    mdx->head.mat = (uint16_t)MDX_MAT_GORAUND_TEXTURED;
+    // mdx->head.framesize = md2_h.framesize;
+    // mdx->head.num_vertices = md2_h.num_vertices;
+    // mdx->head.num_uv = md2_h.num_st;
+    // mdx->head.num_tris = md2_h.num_tris;
+    // mdx->head.num_frames = md2_h.num_frames;
+    // mdx->head.mat = (uint16_t)MDX_MAT_GORAUND_TEXTURED;
 
-    void *data;
+    // void *data;
 
-    // Read MD2 vertices
-    data = md2_h.offset_st;
-    for(int i = 0; i < md2_h.num_st; i++)
-    {
+    // // Read MD2 vertices
+    // data = md2_h.offset_st;
+    // for(int i = 0; i < md2_h.num_st; i++)
+    // {
 
-    }
+    // }
 
     // Read MD2 triangles
 
-    // Read MD2 frames and convert scale and translate into fixed point
 
 
-    
-    return model_size;
+    // return model_size;
+    return 0;
 }
 
 void SortMDX(RenderContext *ctx, MDX *mdx, VECTOR pos, SVECTOR rot, uint32_t scale, MDX_Tex *tex)
@@ -94,7 +102,7 @@ void SortMDX(RenderContext *ctx, MDX *mdx, VECTOR pos, SVECTOR rot, uint32_t sca
     //     // Load vertex positions
     //     gte_ldv3(&v1pos, &v2pos, &v3pos);
 
-    //     // Rotation, Translation and Perspective Triple
+
     //     gte_rtpt();
 
     //     // Compute normal clip for backface culling
@@ -140,14 +148,4 @@ void SortMDX(RenderContext *ctx, MDX *mdx, VECTOR pos, SVECTOR rot, uint32_t sca
     // }
     // // Update nextpri variable
     // ctx->nextpri = (char *)pol3;
-}
-
-SVECTOR mdx_unpack_pos(MDX *mdx, uint16_t frame)
-{
-    return (SVECTOR){ 0, 0, 0 };
-}
-
-SVECTOR mdx_unpack_pos(MDX *mdx, uint16_t frame)
-{
-    return (SVECTOR){ 0, 0, 0 };
 }
