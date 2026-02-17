@@ -130,8 +130,8 @@ typedef struct _PSX_MD2_POLY
 
 typedef struct _PSX_MD2_UV
 {
-    uint8_t u;
-    uint8_t v;
+    uint16_t u;
+    uint16_t v;
 } MDX_UV;
 
 typedef struct _PSX_MD2_Vertex
@@ -144,7 +144,7 @@ typedef struct _PSX_MD2_Vertex
 typedef struct _PSX_MD2_Frame
 {
     SVECTOR scale;      /* scale factor of each frame */
-    SVECTOR translate;  /* translation vector */
+    VECTOR translate;  /* translation vector */
     MDX_Vertex *verts;  /* list of frame's vertices */
 } MDX_Frame;
 
@@ -157,22 +157,36 @@ typedef struct _PSX_MD2_SKIN
 typedef struct _PSX_MD2_M
 {
     MDX_Header head;
-    uint16_t current_frame;
-    uint16_t animation_speed;
-    MDX_Vertex *vertices;
-    MDX_POLY *polys;
+    MDX_UV *uvs;
+    MDX_POLY *tris;
     MDX_Frame *frames;
 } MDX;
+
+typedef struct _PSX_MD2_Animation
+{
+    uint16_t id;
+    uint16_t start_frame;
+    uint16_t end_frame;
+    uint16_t pad;
+
+} MDX_Animation;
+
+typedef struct _PSX_MD2_Info
+{
+    uint16_t current_frame;
+    uint16_t animation_speed;
+    MDX_Animation *animations;
+} MDX_Info;
 
 /**
  * @brief Loads an MD2 model from a file
  *
- * @param char* file MD2 model file
+ * @param char* md2_file MD2 model file
  * @param MDX* mdx Dest pointer that will reference the loaded model
  *
  * @return size_t Size in bytes of the allocated memory for the model
  */
-size_t LoadMDX(const unsigned char *file, MDX *mdx);
+size_t LoadMDX(const unsigned char *md2_file, MDX *mdx);
 
 /**
  * @brief Sorts a loaded MD2 model into the OT
@@ -189,9 +203,10 @@ void SortMDX(RenderContext *ctx, MDX *mdx, VECTOR pos, SVECTOR rot, uint32_t sca
 /**
  * @brief Unpacks frame position based on frame translation and scale
  *
- * @param md2 MD2 model pointer
- * @param frame_number current frame coordinates to unpack
- * @param vertex_index vertex index to unpack
+ * @param mdx MD2 model pointer
+ * @param uint16_t frame_number current frame coordinates to unpack
+ * @param uint32_t vertex_index vertex index to unpack
+ * 
  * @return SVECTOR vector of unpacked positions to be used by the GTE
  */
 SVECTOR mdx_unpack_pos(MDX *mdx, uint16_t frame_number, uint32_t vertex_index);
