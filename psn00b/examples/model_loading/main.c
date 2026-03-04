@@ -1,7 +1,9 @@
 #include "controller.h"
 #include "display.h"
-#include "md2.h"
-#include "mummy.h"
+#include "mdx.h"
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define fix2int(f) ((f + 512) >> 12)
 
@@ -15,9 +17,9 @@ int main()
     TIM_IMAGE tim;
     uint8_t mdx_buffer[320000];  // Buffer to hold the loaded model, adjust size as needed
 
-    MDX *mdx = (MDX *)mdx_buffer;
-
-    const size_t mdx_size = LoadMDX("./mummy.md2", mdx);
+    MDX_Info info;
+    info.current_frame = 0;
+    info.animation_speed = 8;
 
     // LoadMD2FromMem(md2, mummy);
     VECTOR position = {0, 0, 400};
@@ -28,12 +30,16 @@ int main()
     InitDisplay(&context, 1);
     InitControllers();
 
-    //  /* Load .TIM file */
-	// GetTimInfo(tim_texture, &tim);
-	// if( tim.mode & 0x8 )
-	// 	LoadImage( tim.crect, tim.caddr );	/* Upload CLUT if present */
-	// LoadImage( tim.prect, tim.paddr );		/* Upload texture to VRAM */
+    /* Load .TIM file */
+    GetTimInfo(tim_texture, &tim);
+    if (tim.mode & 0x8)
+        LoadImage(tim.crect, tim.caddr); /* Upload CLUT if present */
+    LoadImage(tim.prect, tim.paddr);     /* Upload texture to VRAM */
 
+    // Load MDX model
+    MDX *mdx = loadMDX("mummy.mdx");
+
+    printMDXInfo(mdx);
     // Main loop
     while (1)
     {
@@ -98,18 +104,12 @@ int main()
                 }
             }
         }
-        // if (advance_animation)
-        // {
-        //     md2->current_frame = (md2->current_frame + 1) % 40;
-        //     advance_animation = 0;
-        // }
-        // SortMD2(&context, md2, &tim, position, rotation, scale);
-        FntPrint(-1, "Pos: (%d, %d, %d) Rot: (%d, %d, %d)\n", position.vx, position.vy, position.vz, rotation.vx, rotation.vy, rotation.vz);
-        FntPrint(-1, "MDX\n");
-        FntPrint(-1, "\tVertices: %d\n", mdx->head.num_vertices);
-        FntPrint(-1, "\tUVS: %d\n", mdx->head.num_uv);
-        FntPrint(-1, "\tTris: %d\n", mdx->head.num_tris);
-        FntPrint(-1, "\tFrames: %d\tMat: %d\n", mdx->head.num_frames, mdx->head.mat);
+        if (advance_animation)
+        {
+            info.current_frame = (info.current_frame + 1) % 40;
+            advance_animation = 0;
+        }
+        sortMDX(&context, mdx, position, rotation, scale, &info, &tim);
 
         // Display graphics
         DrawDisplay(&context);

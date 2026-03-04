@@ -6,6 +6,9 @@ typedef int Fixed;
 // Standard fractional fixed point
 #define SHORT_FRAC 12
 #define LONG_FRAC 20
+#ifndef ONE
+#define ONE (1 << SHORT_FRAC)
+#endif
 
 #define inttofix(x) ((x) << SHORT_FRAC)
 #define ftofix(x) ((int)((x) * (1 << SHORT_FRAC)))
